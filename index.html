@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#6C63FF;--primary-l:#EEEEFF;--primary-d:#5A52D5;
+  --bg:#F4F6FB;--card:#FFFFFF;--sidebar:#FFFFFF;
+  --text:#111827;--text2:#6B7280;--text3:#9CA3AF;--border:#E5E7EB;
+  --success:#22C55E;--success-l:#F0FDF4;
+  --danger:#EF4444;--danger-l:#FEF2F2;
+  --warning:#F59E0B;--warning-l:#FFFBEB;
+  --shadow:0 1px 3px rgba(0,0,0,.05),0 4px 12px rgba(0,0,0,.05);
+  --shadow-md:0 4px 24px rgba(0,0,0,.1);
+  --r:14px;--r-sm:10px;--font:\'Inter\',sans-serif;--font-size:14px;
+}
+html,body{height:100%;font-family:var(--font);font-size:var(--font-size);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
+.screen{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;padding:20px}
+.screen.active{display:flex}
+
+/* LOGIN */
+.login-box{background:var(--card);border-radius:24px;padding:44px 36px;width:420px;max-width:100%;text-align:center;box-shadow:var(--shadow-md)}
+.login-logo{width:64px;height:64px;border-radius:20px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:30px;margin:0 auto 20px}
+.login-title{font-size:24px;font-weight:700;color:var(--text);margin-bottom:8px}
+.login-sub{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:24px}
+.lang-bar{display:flex;justify-content:center;gap:8px;margin-bottom:22px}
+.lang-btn{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:white;color:var(--text2);font-family:var(--font);transition:all .14s}
+.lang-btn.active{border-color:var(--primary);background:var(--primary-l);color:var(--primary)}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;border:1.5px solid var(--border);border-radius:40px;background:white;font-family:var(--font);font-size:14px;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:12px;transition:background .14s}
+.btn-google:hover{background:var(--bg)}
+.btn-google svg{width:20px;height:20px;flex-shrink:0}
+.login-note{font-size:11px;color:var(--text3);line-height:1.6}
+
+/* LOADING */
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:14px;color:var(--text2);font-weight:500}
+
+/* NICHO SELECTOR */
+.sel-box{background:var(--card);border-radius:24px;padding:44px 36px;width:480px;max-width:100%;box-shadow:var(--shadow-md)}
+.sel-title{font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;text-align:center}
+.sel-sub{font-size:14px;color:var(--text2);text-align:center;margin-bottom:28px;line-height:1.6}
+.nicho-options{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+.nicho-opt{display:flex;align-items:center;gap:14px;padding:16px 18px;border:2px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .18s;background:white;position:relative}
+.nicho-opt:hover{border-color:var(--primary);background:var(--primary-l)}
+.nicho-opt.selected{border-color:var(--primary);background:var(--primary-l)}
+.nicho-opt-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.nicho-opt-info{flex:1;text-align:left}
+.nicho-opt-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
+.nicho-opt-desc{font-size:12px;color:var(--text3);line-height:1.4}
+.nicho-opt-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .14s}
+.nicho-opt.selected .nicho-opt-radio{border-color:var(--primary);background:var(--primary)}
+.nicho-opt.selected .nicho-opt-radio::after{content:\'\';width:8px;height:8px;border-radius:50%;background:white}
+.btn-enter{width:100%;padding:14px;border-radius:40px;background:var(--primary);color:white;border:none;font-family:var(--font);font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;opacity:.5;pointer-events:none}
+.btn-enter.ready{opacity:1;pointer-events:auto}
+.btn-enter.ready:hover{background:var(--primary-d);transform:translateY(-1px)}
+.sel-note{text-align:center;font-size:11px;color:var(--text3);margin-top:14px;line-height:1.6}
+
+/* APP */
+.app{display:none;height:100vh;overflow:hidden}
+.app.active{display:flex}
+.sidebar{width:240px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid var(--border);overflow:hidden;transition:width .25s}
+.sidebar.collapsed{width:64px}
+.sb-top{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);min-height:64px}
+.sb-logo{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sb-brand{overflow:hidden;flex:1;transition:opacity .2s}
+.sidebar.collapsed .sb-brand{opacity:0;width:0;flex:0}
+.sb-biz{font-size:13px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-sub{font-size:10px;color:var(--text3)}
+.sb-toggle{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px;display:flex;flex-shrink:0}
+.sidebar.collapsed .sb-toggle{margin:0 auto}
+.nav{padding:8px;flex:1;overflow-y:auto;overflow-x:hidden}
+.nav-sec{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:10px 8px 4px;white-space:nowrap;transition:opacity .2s}
+.sidebar.collapsed .nav-sec{opacity:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .14s;margin-bottom:1px;position:relative;white-space:nowrap}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--primary-l);color:var(--primary);font-weight:600}
+.nav-ic{width:20px;text-align:center;flex-shrink:0;font-size:16px}
+.nav-lbl{transition:opacity .2s;flex:1}
+.sidebar.collapsed .nav-lbl{opacity:0;width:0;flex:0}
+.nav-badge{background:var(--danger);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:20px;flex-shrink:0}
+.sidebar.collapsed .nav-badge{display:none}
+.nav-tip{display:none;position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--text);color:white;font-size:12px;padding:5px 10px;border-radius:6px;white-space:nowrap;z-index:999;pointer-events:none}
+.sidebar.collapsed .nav-item:hover .nav-tip{display:block}
+.sb-footer{padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--r-sm);cursor:pointer;transition:background .14s}
+.user-row:hover{background:var(--bg)}
+.user-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.user-ph{width:32px;height:32px;border-radius:50%;background:var(--primary-l);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);flex-shrink:0}
+.user-info{overflow:hidden;transition:opacity .2s;flex:1;min-width:0}
+.sidebar.collapsed .user-info{opacity:0;width:0;flex:0}
+.user-nm{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-rl{font-size:10px;color:var(--text3)}
+.sync-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:3px 8px;border-radius:20px;margin:4px 8px 0}
+.sync-pill.synced{background:var(--success-l);color:var(--success)}
+.sync-pill.syncing{background:var(--warning-l);color:var(--warning)}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.sidebar.collapsed .sync-pill{opacity:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:64px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
+.tb-left{flex:1;min-width:0}
+.tb-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;white-space:nowrap}
+.tb-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-add{display:flex;align-items:center;gap:6px;background:var(--primary);color:white;border:none;border-radius:40px;padding:9px 18px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-add:hover{background:var(--primary-d)}
+.mobile-topbar{display:none;height:56px;background:var(--card);border-bottom:1px solid var(--border);align-items:center;padding:0 16px;gap:12px}
+.hbg{background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;display:flex;color:var(--text2);font-size:20px}
+.mob-title{font-size:16px;font-weight:700;color:var(--text);flex:1}
+.drawer{display:none;position:fixed;inset:0;z-index:300}
+.drawer-ov{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.drawer-ct{position:absolute;top:0;left:0;bottom:0;width:260px;background:var(--sidebar);display:flex;flex-direction:column;box-shadow:var(--shadow-md);animation:slideIn .25s ease}
+@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.scroll{flex:1;overflow-y:auto;padding:20px 24px 40px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.kpi-grid{display:grid;gap:14px;margin-bottom:20px}
+.kpi-4{grid-template-columns:repeat(4,1fr)}
+.kpi-3{grid-template-columns:repeat(3,1fr)}
+.kpi-2{grid-template-columns:repeat(2,1fr)}
+.kpi-card{background:var(--card);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);transition:transform .15s}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-card.accent{background:var(--primary);cursor:pointer}
+.kpi-card.accent .kpi-label,.kpi-card.accent .kpi-sub{color:rgba(255,255,255,.7)}
+.kpi-card.accent .kpi-value{color:white}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.kpi-label{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);margin-bottom:5px}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.02em;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+.g65{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:16px}
+.g56{display:grid;grid-template-columns:1fr 1.7fr;gap:16px;margin-bottom:16px}
+.card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+.card-dark{background:var(--text);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+.card-dark .card-title{color:white}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-title{font-size:15px;font-weight:700;color:var(--text)}
+.card-tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;background:var(--bg);color:var(--text2);padding:4px 10px;border-radius:20px}
+.card-link{font-size:12px;font-weight:600;color:var(--primary);cursor:pointer}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--bg)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:11px 12px;vertical-align:middle}
+.td-name{font-weight:600;font-size:13px}
+.td-muted{color:var(--text3);font-size:12px}
+.td-money{font-weight:700;font-size:14px}
+.td-pos{color:var(--success)}
+.td-neg{color:var(--danger)}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.b-primary{background:var(--primary-l);color:var(--primary)}
+.b-success{background:var(--success-l);color:var(--success)}
+.b-danger{background:var(--danger-l);color:var(--danger)}
+.b-warning{background:var(--warning-l);color:var(--warning)}
+.b-gray{background:var(--bg);color:var(--text2)}
+.list-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.list-row:last-child{border-bottom:none}
+.list-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.list-name{font-size:13px;font-weight:600;color:var(--text)}
+.list-sub{font-size:11px;color:var(--text3)}
+.list-r{margin-left:auto;text-align:right}
+.list-amount{font-size:14px;font-weight:700;color:var(--text)}
+.list-status{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.prog-row{margin-bottom:14px}
+.prog-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.prog-label{font-size:13px;font-weight:600;color:var(--text)}
+.prog-pct{font-size:13px;font-weight:700;color:var(--primary)}
+.prog-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;background:var(--primary);transition:width .6s ease}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:18px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 80px rgba(0,0,0,.2);animation:mIn .2s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.modal-title{font-size:18px;font-weight:700;color:var(--text)}
+.modal-x{background:var(--bg);border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2)}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.fl{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text3)}
+.fi{padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);outline:none;width:100%;transition:border-color .14s;-webkit-appearance:none}
+.fi:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(108,99,255,.1);background:white}
+select.fi{cursor:pointer}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+.btn-cancel{background:var(--bg);border:none;padding:10px 18px;border-radius:40px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;color:var(--text2)}
+.btn-cancel:hover{background:var(--border)}
+.btn-save{background:var(--primary);border:none;padding:10px 22px;border-radius:40px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;color:white}
+.btn-save:hover{background:var(--primary-d)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:13px;color:var(--text)}
+.clr-input{width:36px;height:28px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;padding:2px;background:none}
+.sz-input{width:64px;padding:6px 8px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);background:var(--bg);text-align:center;outline:none}
+.font-sel{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:var(--bg);outline:none;cursor:pointer;width:100%;font-family:var(--font)}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:11px;transition:.3s}
+.toggle-slider::before{content:\'\';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:var(--primary)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px)}
+.widget-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border);margin-bottom:8px}
+.widget-name{font-size:13px;font-weight:500;color:var(--text)}
+.widget-desc{font-size:11px;color:var(--text3);margin-top:2px}
+.chart-wrap{position:relative;height:180px}
+/* CONNECT SCREEN */
+#conn-new-radio,#conn-ex-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .14s}
+.calc-out{background:var(--bg);border-radius:var(--r-sm);padding:16px;margin-top:14px;display:none}
+.calc-out.show{display:block}
+.calc-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text2)}
+.calc-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:var(--text);padding-top:10px;margin-top:6px;border-top:1px solid var(--border)}
+.calc-profit{display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--success);padding-top:5px}
+.calc-margin{display:flex;justify-content:space-between;font-size:14px;font-weight:700;color:var(--primary);padding-top:4px}
+.stock-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.stock-row:last-child{border-bottom:none}
+.client-card{background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1px solid var(--border)}
+.client-av{width:42px;height:42px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.appt-row{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-sm);background:var(--bg);margin-bottom:8px;border-left:3px solid var(--primary)}
+.appt-time{font-size:12px;font-weight:700;color:var(--primary);min-width:50px}
+.appt-name{font-size:13px;font-weight:600;color:var(--text)}
+.appt-service{font-size:11px;color:var(--text3)}
+.pet-card{background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;border:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.pet-icon{font-size:28px;flex-shrink:0}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:white;padding:12px 20px;border-radius:40px;font-size:13px;font-weight:500;z-index:999;transform:translateY(60px);opacity:0;transition:all .25s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.toast.show{transform:translateY(0);opacity:1}
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
+.ibtn{background:var(--bg);border:none;border-radius:8px;color:var(--text3);font-size:11px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:var(--font)}
+.ibtn:hover{background:var(--danger-l);color:var(--danger)}
+.ibtn.ok:hover{background:var(--success-l);color:var(--success)}
+.welcome-banner{border-radius:var(--r);padding:22px 26px;margin-bottom:20px;color:white;background:linear-gradient(135deg,var(--primary),var(--primary-d))}
+.welcome-text{font-size:19px;font-weight:700;margin-bottom:5px}
+.welcome-sub{font-size:13px;opacity:.8}
+@media(max-width:768px){
+  .sidebar{display:none}.topbar{display:none}
+  .mobile-topbar{display:flex}
+  .app.active{flex-direction:column}
+  .scroll{padding:14px 16px 40px}
+  .kpi-4,.kpi-3{grid-template-columns:1fr 1fr}
+  .g2,.g3,.g65,.g56{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .kpi-4,.kpi-3{grid-template-columns:1fr 1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .sel-box,.login-box{padding:32px 20px}
+}
+</style>
+</head>
+<body>
+<!-- LOGIN -->
+<div class="screen active" id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">🏢</div>
+    <div class="login-title">Business Manager</div>
+    <div class="login-sub" id="login-sub">Your all-in-one business management platform.</div>
+    <div class="lang-bar">
+      <button class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</button>
+      <button class="lang-btn" onclick="setLang('es')">🇪🇸 ES</button>
+      <button class="lang-btn" onclick="setLang('pt')">🇧🇷 PT</button>
+    </div>
+    <button class="btn-google" onclick="signIn()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span id="btn-google-txt">Continue with Google</span>
+    </button>
+    <div class="login-note" id="login-note">Your data is saved in your own Google Drive. Only authorized emails can access.</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="screen-loading">
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loading-txt">Loading...</div>
+</div>
+
+<!-- ACCESS DENIED -->
+<div class="screen" id="screen-denied">
+  <div class="login-box" style="max-width:400px">
+    <div style="font-size:48px;margin-bottom:16px">🔒</div>
+    <div class="login-title" id="denied-title">Access not activated</div>
+    <div class="login-sub" id="denied-sub">Your email is not yet authorized. After purchasing, send your Gmail address to the seller to activate your access.</div>
+    <div style="background:#F4F6FB;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#6B7280;word-break:break-all" id="denied-email"></div>
+    <button class="btn-google" onclick="signOut()" style="justify-content:center">
+      <span id="denied-btn">Try a different account</span>
+    </button>
+  </div>
+</div>
+
+<!-- CONNECT SHEET — for sharing data between partners -->
+<div class="screen" id="screen-connect">
+  <div class="sel-box" style="max-width:460px">
+    <div class="sel-title" id="conn-title">Set up your data</div>
+    <div class="sel-sub" id="conn-sub">Create a new workspace or connect to one shared with you</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px">
+      <div class="nicho-opt selected" id="conn-new" onclick="selectConn('new')">
+        <div class="nicho-opt-icon" style="background:#EEEEFF">✨</div>
+        <div class="nicho-opt-info">
+          <div class="nicho-opt-name" id="conn-new-title">Create new workspace</div>
+          <div class="nicho-opt-desc" id="conn-new-desc">Start fresh — a new Google Sheet will be created in your Drive</div>
+        </div>
+        <div class="nicho-opt-radio selected" id="conn-new-radio" style="border-color:var(--primary);background:var(--primary)"><div style="width:8px;height:8px;border-radius:50%;background:white"></div></div>
+      </div>
+      <div class="nicho-opt" id="conn-existing" onclick="selectConn('existing')">
+        <div class="nicho-opt-icon" style="background:#F0FDF4">🔗</div>
+        <div class="nicho-opt-info">
+          <div class="nicho-opt-name" id="conn-ex-title">Connect existing workspace</div>
+          <div class="nicho-opt-desc" id="conn-ex-desc">I have a Sheet ID shared by my business partner</div>
+        </div>
+        <div class="nicho-opt-radio" id="conn-ex-radio"></div>
+      </div>
+    </div>
+    <div id="conn-id-area" style="display:none;margin-bottom:16px">
+      <div class="fg">
+        <label class="fl" id="conn-id-lbl">Sheet ID</label>
+        <input class="fi" id="conn-sheet-id" placeholder="Paste the Sheet ID here...">
+        <div style="font-size:11px;color:#9CA3AF;margin-top:5px" id="conn-id-hint">Find it in the Sheet URL: docs.google.com/spreadsheets/d/<strong>ID_HERE</strong>/edit</div>
+      </div>
+    </div>
+    <button class="btn-enter ready" onclick="confirmConnect()" id="conn-btn">
+      <span id="conn-btn-txt">Continue →</span>
+    </button>
+  </div>
+</div>
+
+<!-- NICHO SELECTOR - elegant radio options -->
+<div class="screen" id="screen-selector">
+  <div class="sel-box">
+    <div class="sel-title" id="sel-title">What's your business?</div>
+    <div class="sel-sub" id="sel-sub">Choose once — this sets up your workspace</div>
+    <div class="nicho-options" id="nicho-options">
+      <!-- Built by JS -->
+    </div>
+    <button class="btn-enter" id="btn-enter" onclick="confirmNicho()">
+      <span id="btn-enter-txt">Enter my workspace →</span>
+    </button>
+    <div class="sel-note" id="sel-note">This choice is permanent for this account. To use a different business type, use a different Google account.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo" id="sb-logo">🧁</div>
+      <div class="sb-brand">
+        <div class="sb-biz" id="sb-biz-name">Business Manager</div>
+        <div class="sb-sub" id="sb-nicho-lbl">—</div>
+      </div>
+      <button class="sb-toggle" onclick="toggleSidebar()">☰</button>
+    </div>
+    <nav class="nav" id="sidebar-nav"></nav>
+    <div class="sb-footer">
+      <div class="user-row" onclick="signOut()">
+        <img id="user-pic" class="user-pic" src="" style="display:none">
+        <div id="user-ph" class="user-ph">?</div>
+        <div class="user-info">
+          <div class="user-nm" id="user-name">...</div>
+          <div class="user-rl" id="txt-signout">Sign out</div>
+        </div>
+      </div>
+      <div class="sync-pill synced" id="sync-pill">
+        <div class="sync-dot"></div>
+        <span id="sync-text">Synced</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="mobile-topbar">
+    <button class="hbg" onclick="openDrawer()">☰</button>
+    <div class="mob-title" id="mobile-title">Dashboard</div>
+    <button class="btn-add" id="mobile-cta" onclick="openCTA()" style="padding:7px 14px;font-size:12px">+</button>
+  </div>
+
+  <div class="drawer" id="drawer" style="display:none">
+    <div class="drawer-ov" onclick="closeDrawer()"></div>
+    <div class="drawer-ct">
+      <div class="sb-top" style="padding:20px 16px">
+        <div class="sb-logo" id="drawer-logo">🧁</div>
+        <div class="sb-brand" style="opacity:1;width:auto;flex:1">
+          <div class="sb-biz" id="drawer-biz-name">Business Manager</div>
+        </div>
+        <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3)" onclick="closeDrawer()">✕</button>
+      </div>
+      <nav class="nav" id="drawer-nav" style="flex:1"></nav>
+      <div class="sb-footer">
+        <div class="user-row" onclick="signOut()">
+          <img id="drawer-user-pic" class="user-pic" src="" style="display:none">
+          <div class="user-ph" id="drawer-user-ph">?</div>
+          <div class="user-info" style="opacity:1;width:auto;flex:1">
+            <div class="user-nm" id="drawer-user-name">...</div>
+            <div class="user-rl" id="drawer-signout">Sign out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-title" id="ptitle">Dashboard</div>
+        <div class="tb-sub" id="psub"></div>
+      </div>
+      <div class="tb-right">
+        <button class="btn-add" id="cta-btn" onclick="openCTA()">+ <span id="cta-txt">Add New</span></button>
+      </div>
+    </header>
+    <div class="scroll" id="app-scroll"></div>
+  </div>
+</div>
+
+<!-- SHARED MODALS -->
+<div class="modal-overlay" id="m-sale"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title" id="m-sale-title">New Sale</div><button class="modal-x" onclick="closeModal('m-sale')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Date</label><input class="fi" id="ms-date" type="date"></div><div class="fg"><label class="fl">Category</label><select class="fi" id="ms-cat"></select></div></div>
+  <div class="fg"><label class="fl" id="ms-prod-lbl">Product / Service</label><input class="fi" id="ms-prod" placeholder="Description"></div>
+  <div class="r2"><div class="fg"><label class="fl">Qty</label><input class="fi" id="ms-qty" type="number" value="1"></div><div class="fg"><label class="fl">Price ($)</label><input class="fi" id="ms-price" type="number" placeholder="0.00"></div></div>
+  <div class="fg"><label class="fl">Payment</label><select class="fi" id="ms-pay"></select></div>
+  <div class="fg"><label class="fl">Notes</label><input class="fi" id="ms-notes" placeholder="Optional"></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-sale')">Cancel</button><button class="btn-save" onclick="saveSale()">Save</button></div>
+</div></div>
+
+<div class="modal-overlay" id="m-exp"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">New Expense</div><button class="modal-x" onclick="closeModal('m-exp')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Date</label><input class="fi" id="me-date" type="date"></div><div class="fg"><label class="fl">Category</label><select class="fi" id="me-cat"></select></div></div>
+  <div class="fg"><label class="fl">Description</label><input class="fi" id="me-desc" placeholder="Description"></div>
+  <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="me-amt" type="number" placeholder="0.00"></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-exp')">Cancel</button><button class="btn-save" onclick="saveExpense()">Save</button></div>
+</div></div>
+
+<div class="modal-overlay" id="m-order"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title" id="m-order-title">New Order</div><button class="modal-x" onclick="closeModal('m-order')">✕</button></div>
+  <div class="fg"><label class="fl" id="m-client-lbl">Client</label><input class="fi" id="mo-cust" placeholder="Full name"></div>
+  <div class="fg"><label class="fl" id="m-service-lbl">Service</label><input class="fi" id="mo-prod" placeholder="Description"></div>
+  <div class="r2"><div class="fg"><label class="fl">Date</label><input class="fi" id="mo-date" type="date"></div><div class="fg"><label class="fl" id="m-due-lbl">Due / Appointment</label><input class="fi" id="mo-due" type="date"></div></div>
+  <div class="r2"><div class="fg"><label class="fl">Price ($)</label><input class="fi" id="mo-price" type="number" placeholder="0.00"></div><div class="fg"><label class="fl">Deposit ($)</label><input class="fi" id="mo-dep" type="number" placeholder="0.00"></div></div>
+  <div class="fg"><label class="fl">Notes</label><input class="fi" id="mo-notes" placeholder="Details, allergies, preferences..."></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-order')">Cancel</button><button class="btn-save" onclick="saveOrder()">Save</button></div>
+</div></div>
+
+<!-- Pet specific modal -->
+<div class="modal-overlay" id="m-pet"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">Add Pet Client</div><button class="modal-x" onclick="closeModal('m-pet')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Pet Name</label><input class="fi" id="mp-petname" placeholder="Buddy"></div><div class="fg"><label class="fl">Owner Name</label><input class="fi" id="mp-owner" placeholder="Full name"></div></div>
+  <div class="r2"><div class="fg"><label class="fl">Species</label><select class="fi" id="mp-species"><option>Dog</option><option>Cat</option><option>Rabbit</option><option>Other</option></select></div><div class="fg"><label class="fl">Breed</label><input class="fi" id="mp-breed" placeholder="Golden Retriever"></div></div>
+  <div class="r2"><div class="fg"><label class="fl">Size</label><select class="fi" id="mp-size"><option>Small</option><option>Medium</option><option>Large</option><option>XL</option></select></div><div class="fg"><label class="fl">Owner Phone</label><input class="fi" id="mp-phone" placeholder="+1 555..."></div></div>
+  <div class="fg"><label class="fl">Notes / Special Care</label><input class="fi" id="mp-notes" placeholder="Allergies, behavior, special instructions..."></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-pet')">Cancel</button><button class="btn-save" onclick="savePet()">Save</button></div>
+</div></div>
+
+<!-- Nail client modal -->
+<div class="modal-overlay" id="m-client"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">Add Client</div><button class="modal-x" onclick="closeModal('m-client')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Name</label><input class="fi" id="mc-name" placeholder="Full name"></div><div class="fg"><label class="fl">Phone</label><input class="fi" id="mc-phone" placeholder="+1 555..."></div></div>
+  <div class="fg"><label class="fl">Preferences / Allergies</label><input class="fi" id="mc-notes" placeholder="Preferred colors, allergies, nail style..."></div>
+  <div class="fg"><label class="fl">Referral</label><input class="fi" id="mc-ref" placeholder="How did they find you?"></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-client')">Cancel</button><button class="btn-save" onclick="saveClient()">Save</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+var ADMIN_SHEET_ID = '106oyGRw5dXXirfUxFVNPUnjFwiDWYYfTQg9leu27p38';
+var CLIENT_ID = '879836754708-vhotn8u4827sa2bgum7fq0epqnds4n4r.apps.googleusercontent.com';
+var SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+
+// ── NICHO DEFINITIONS ────────────────────────────────────────
+var NICHOS = {
+  bakery: {
+    id:'bakery', icon:'🧁', name:'Bakery', color:'#D97706', primary:'#D97706',
+    desc:'Cakes, pastries & baked goods',
+    nav:[
+      {page:'dashboard',icon:'⊞',lbl:'Dashboard'},
+      {page:'sales',icon:'💰',lbl:'Sales'},
+      {page:'expenses',icon:'🧾',lbl:'Expenses'},
+      {page:'orders',icon:'📋',lbl:'Orders',badge:'orders-badge'},
+      {page:'products',icon:'🧮',lbl:'Cost Calculator'},
+      {page:'inventory',icon:'📦',lbl:'Inventory'},
+      {page:'goals',icon:'🎯',lbl:'Goals'},
+      {page:'settings',icon:'⚙️',lbl:'Settings'},
+    ],
+    saleCats:['Custom Cakes','Wedding Cakes','Cupcakes','Cookies','Bread & Pastries','Wholesale','Online Orders','Events'],
+    expCats:['Ingredients','Packaging','Equipment','Rent','Utilities','Marketing','Staff','Delivery','Other'],
+    payMethods:['Cash','Card','Transfer','Online'],
+    orderLabel:'Custom Order', clientLabel:'Customer', serviceLabel:'Product / Design',
+    sheets:['Sales','Expenses','Orders','Products','Inventory','Goals'],
+  },
+  nails: {
+    id:'nails', icon:'💅', name:'Nail Studio', color:'#DB2777', primary:'#DB2777',
+    desc:'Nail art & manicure services',
+    nav:[
+      {page:'dashboard',icon:'⊞',lbl:'Dashboard'},
+      {page:'sales',icon:'💰',lbl:'Revenue'},
+      {page:'expenses',icon:'🧾',lbl:'Expenses'},
+      {page:'appointments',icon:'📅',lbl:'Appointments',badge:'appt-badge'},
+      {page:'clients',icon:'👥',lbl:'Clients'},
+      {page:'inventory',icon:'💅',lbl:'Supplies'},
+      {page:'goals',icon:'🎯',lbl:'Goals'},
+      {page:'settings',icon:'⚙️',lbl:'Settings'},
+    ],
+    saleCats:['Manicure','Pedicure','Gel Nails','Nail Art','Acrylic Nails','Nail Removal','Nail Repair','Package Deal'],
+    expCats:['Products & Supplies','Equipment','Rent','Utilities','Marketing','Training','Other'],
+    payMethods:['Cash','Card','Transfer','Online'],
+    orderLabel:'Appointment', clientLabel:'Client', serviceLabel:'Service',
+    sheets:['Sales','Expenses','Appointments','Clients','Supplies','Goals'],
+  },
+  petgrooming: {
+    id:'petgrooming', icon:'🐾', name:'Pet Grooming', color:'#059669', primary:'#059669',
+    desc:'Grooming & pet care services',
+    nav:[
+      {page:'dashboard',icon:'⊞',lbl:'Dashboard'},
+      {page:'sales',icon:'💰',lbl:'Revenue'},
+      {page:'expenses',icon:'🧾',lbl:'Expenses'},
+      {page:'appointments',icon:'📅',lbl:'Appointments',badge:'appt-badge'},
+      {page:'pets',icon:'🐾',lbl:'Pet Clients'},
+      {page:'inventory',icon:'📦',lbl:'Supplies'},
+      {page:'goals',icon:'🎯',lbl:'Goals'},
+      {page:'settings',icon:'⚙️',lbl:'Settings'},
+    ],
+    saleCats:['Full Groom','Bath & Dry','Nail Trim','Ear Cleaning','Teeth Brushing','De-shedding','Puppy First Groom','Package Deal'],
+    expCats:['Grooming Supplies','Equipment','Rent','Utilities','Marketing','Staff','Other'],
+    payMethods:['Cash','Card','Transfer','Online'],
+    orderLabel:'Grooming Appointment', clientLabel:'Owner', serviceLabel:'Grooming Service',
+    sheets:['Sales','Expenses','Appointments','Pets','Supplies','Goals'],
+  }
+};
+
+// ── TRANSLATIONS ─────────────────────────────────────────────
+var TL = {
+  en:{
+    loginSub:'Your all-in-one business management platform.',
+    loginBtn:'Continue with Google',
+    loginNote:'Your data is in your own Google Drive. Only authorized emails can access.',
+    loading:'Loading...',
+    selTitle:'What\'s your business?',
+    selSub:'Choose once — this sets up your workspace permanently',
+    selNote:'This choice is permanent for this account. To use a different business type, use a different Google account.',
+    btnEnter:'Enter my workspace →',
+    signout:'Sign out',synced:'Synced',
+    dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',
+    appointments:'Appointments',clients:'Clients',pets:'Pet Clients',
+    products:'Cost Calculator',inventory:'Inventory / Supplies',goals:'Goals',settings:'Settings',
+    overview:'OVERVIEW',daily:'DAILY',business:'BUSINESS',config:'CONFIG',
+    addNew:'Add New',newSale:'+ New Sale',addExp:'+ Add Expense',
+    newAppt:'+ New Appointment',addClient:'+ Add Client',addPet:'+ Add Pet',
+    revenue:'Total Revenue',alltime:'all time',pendingPay:'Pending Payments',
+    activeAppts:'Today\'s Appointments',lowStock:'Low Stock',
+    recentSales:'Recent Sales',last5:'Last 5',
+    pendingOrders:'Pending Orders',pendingAppts:'Upcoming Appointments',
+    seeAll:'See all →',noSales:'No sales yet',noPending:'Nothing pending',
+    revChart:'Revenue',months6:'6 months',byCategory:'By Category',
+    expCats:'Expenses by Category',critStock:'Low Supplies',stockOk:'All supplies OK ✓',
+    totalRev:'Total Revenue',transactions:'Transactions',avg:'Average Sale',bestCat:'Top Service',
+    salesLog:'Sales Log',expLog:'Expense Log',
+    totalExp:'Total Expenses',thisMonth:'This Month',topCat:'Top Category',
+    totalAppts:'Total',confirmed:'Confirmed',done:'Completed',balanceDue:'Balance Due',
+    costCalc:'Cost Calculator',prodName:'Product Name',
+    ing:'Ingredients ($)',pkg:'Packaging ($)',hrs:'Labor Hours',rate:'Rate/hr ($)',
+    salePrice:'Sale Price ($)',unitsMo:'Units / Month',
+    cost:'Total Cost',profUnit:'Profit / unit',margin:'Margin',
+    saveProd:'Save Product',clear:'Clear',margins:'Margins',catalog:'Catalog',
+    items:'Items',reorderNow:'Reorder Now',lowStockLbl:'Low Stock',totalVal:'Total Value',
+    stockLevels:'Stock Levels',addItem:'Add Item',itemName:'Name',
+    inStock:'In Stock',minimum:'Minimum',unitCost:'Unit Cost ($)',supplier:'Supplier',addItemBtn:'Add',noItems:'No items yet',
+    goalTotal:'Total',onTrack:'On Track',behind:'Behind',goalDone:'Completed',
+    progress:'Progress',newGoal:'New Goal',goalDesc:'Description',
+    target:'Target',current:'Current',deadline:'Deadline',priority:'Priority',
+    high:'High',medium:'Medium',low:'Low',saveGoal:'Save Goal',noGoals:'No goals set',
+    myBiz:'My Business',bizName:'Business Name',language:'Language',
+    colors:'Colors',typography:'Typography',widgets:'Dashboard Widgets',
+    data:'Data',sampleData:'Load Sample Data',exportCSV:'Export CSV',signoutBtn:'Sign Out',
+    save:'Save',cancel:'Cancel',reset:'Reset',
+    confirmDel:'Delete this entry?',confirmSignout:'Sign out?',
+    saved:'Saved',deleted:'Deleted',sampleLoaded:'Sample data loaded!',
+    exported:'Exported!',copiedId:'ID copied ✓',fillRequired:'Fill required fields',
+    saleSaved:'Sale saved',expSaved:'Expense saved',apptSaved:'Appointment saved',
+    clientSaved:'Client saved',petSaved:'Pet added',goalSaved:'Goal saved',
+    orderCompleted:'Marked as completed ✓',
+    mn:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    petSizes:{Small:'Small',Medium:'Medium',Large:'Large','XL':'XL'},
+  },
+  es:{
+    loginSub:'Tu plataforma de gestión empresarial todo en uno.',
+    loginBtn:'Continuar con Google',
+    loginNote:'Tus datos están en tu propio Google Drive.',
+    loading:'Cargando...',
+    selTitle:'¿Cuál es tu negocio?',
+    selSub:'Elegí una vez — esto configura tu espacio de trabajo de forma permanente',
+    selNote:'Esta elección es permanente para esta cuenta. Para usar otro tipo de negocio, usá otra cuenta de Google.',
+    btnEnter:'Entrar a mi espacio →',
+    signout:'Cerrar sesión',synced:'Sincronizado',
+    dashboard:'Dashboard',sales:'Ventas',expenses:'Gastos',
+    appointments:'Turnos',clients:'Clientas',pets:'Mascotas',
+    products:'Calculadora de Costos',inventory:'Inventario / Insumos',goals:'Metas',settings:'Ajustes',
+    overview:'PRINCIPAL',daily:'DIARIO',business:'NEGOCIO',config:'CONFIG',
+    addNew:'Añadir Nuevo',newSale:'+ Nueva Venta',addExp:'+ Agregar Gasto',
+    newAppt:'+ Nuevo Turno',addClient:'+ Agregar Clienta',addPet:'+ Agregar Mascota',
+    revenue:'Ingresos Totales',alltime:'todos los tiempos',pendingPay:'Pagos Pendientes',
+    activeAppts:'Turnos de Hoy',lowStock:'Stock Bajo',
+    recentSales:'Ventas Recientes',last5:'Últimas 5',
+    pendingOrders:'Pedidos Pendientes',pendingAppts:'Próximos Turnos',
+    seeAll:'Ver todos →',noSales:'Sin ventas aún',noPending:'Sin pendientes',
+    revChart:'Ingresos',months6:'6 meses',byCategory:'Por Categoría',
+    expCats:'Gastos por Categoría',critStock:'Insumos Bajos',stockOk:'Todos los insumos OK ✓',
+    totalRev:'Ingresos Totales',transactions:'Transacciones',avg:'Promedio',bestCat:'Mejor Servicio',
+    salesLog:'Registro de Ventas',expLog:'Registro de Gastos',
+    totalExp:'Gastos Totales',thisMonth:'Este Mes',topCat:'Mayor Categoría',
+    totalAppts:'Total',confirmed:'Confirmados',done:'Completados',balanceDue:'Balance Pendiente',
+    costCalc:'Calculadora de Costos',prodName:'Nombre del Producto',
+    ing:'Ingredientes ($)',pkg:'Packaging ($)',hrs:'Horas Labor',rate:'Tarifa/hr ($)',
+    salePrice:'Precio Venta ($)',unitsMo:'Unidades / Mes',
+    cost:'Costo Total',profUnit:'Ganancia / unidad',margin:'Margen',
+    saveProd:'Guardar Producto',clear:'Limpiar',margins:'Márgenes',catalog:'Catálogo',
+    items:'Items',reorderNow:'Reordenar Ya',lowStockLbl:'Stock Bajo',totalVal:'Valor Total',
+    stockLevels:'Niveles de Stock',addItem:'Agregar Item',itemName:'Nombre',
+    inStock:'En Stock',minimum:'Mínimo',unitCost:'Costo Unit ($)',supplier:'Proveedor',addItemBtn:'Agregar',noItems:'Sin items',
+    goalTotal:'Totales',onTrack:'En Camino',behind:'Atrasadas',goalDone:'Completadas',
+    progress:'Progreso',newGoal:'Nueva Meta',goalDesc:'Descripción',
+    target:'Objetivo',current:'Actual',deadline:'Fecha Límite',priority:'Prioridad',
+    high:'Alta',medium:'Media',low:'Baja',saveGoal:'Guardar Meta',noGoals:'Sin metas',
+    myBiz:'Mi Negocio',bizName:'Nombre del Negocio',language:'Idioma',
+    colors:'Colores',typography:'Tipografía',widgets:'Widgets del Dashboard',
+    data:'Datos',sampleData:'Cargar Datos de Ejemplo',exportCSV:'Exportar CSV',signoutBtn:'Cerrar Sesión',
+    save:'Guardar',cancel:'Cancelar',reset:'Resetear',
+    confirmDel:'¿Borrar este registro?',confirmSignout:'¿Cerrar sesión?',
+    saved:'Guardado',deleted:'Eliminado',sampleLoaded:'¡Datos de ejemplo cargados!',
+    exported:'¡Exportado!',copiedId:'ID copiado ✓',fillRequired:'Completá los campos requeridos',
+    saleSaved:'Venta guardada',expSaved:'Gasto guardado',apptSaved:'Turno guardado',
+    clientSaved:'Clienta guardada',petSaved:'Mascota agregada',goalSaved:'Meta guardada',
+    orderCompleted:'Marcado como completado ✓',
+    mn:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+  },
+  pt:{
+    loginSub:'Sua plataforma de gestão empresarial completa.',
+    loginBtn:'Continuar com Google',
+    loginNote:'Seus dados ficam no seu próprio Google Drive.',
+    loading:'Carregando...',
+    selTitle:'Qual é o seu negócio?',
+    selSub:'Escolha uma vez — isso configura seu espaço de trabalho permanentemente',
+    selNote:'Esta escolha é permanente para esta conta.',
+    btnEnter:'Entrar no meu espaço →',
+    signout:'Sair',synced:'Sincronizado',
+    dashboard:'Dashboard',sales:'Vendas',expenses:'Despesas',
+    appointments:'Agendamentos',clients:'Clientes',pets:'Animais',
+    products:'Calculadora de Custos',inventory:'Estoque / Insumos',goals:'Metas',settings:'Configurações',
+    overview:'PRINCIPAL',daily:'DIÁRIO',business:'NEGÓCIO',config:'CONFIG',
+    addNew:'Adicionar',newSale:'+ Nova Venda',addExp:'+ Adicionar Despesa',
+    newAppt:'+ Novo Agendamento',addClient:'+ Adicionar Cliente',addPet:'+ Adicionar Animal',
+    revenue:'Receita Total',alltime:'todos os tempos',pendingPay:'Pagamentos Pendentes',
+    activeAppts:'Agendamentos de Hoje',lowStock:'Estoque Baixo',
+    recentSales:'Vendas Recentes',last5:'Últimas 5',
+    pendingOrders:'Pedidos Pendentes',pendingAppts:'Próximos Agendamentos',
+    seeAll:'Ver todos →',noSales:'Sem vendas ainda',noPending:'Nada pendente',
+    revChart:'Receita',months6:'6 meses',byCategory:'Por Categoria',
+    expCats:'Despesas por Categoria',critStock:'Insumos Baixos',stockOk:'Todos os insumos OK ✓',
+    totalRev:'Receita Total',transactions:'Transações',avg:'Média',bestCat:'Melhor Serviço',
+    salesLog:'Registro de Vendas',expLog:'Registro de Despesas',
+    totalExp:'Despesas Totais',thisMonth:'Este Mês',topCat:'Maior Categoria',
+    totalAppts:'Total',confirmed:'Confirmados',done:'Concluídos',balanceDue:'Saldo Devedor',
+    costCalc:'Calculadora de Custos',prodName:'Nome do Produto',
+    ing:'Ingredientes ($)',pkg:'Embalagem ($)',hrs:'Horas Trabalho',rate:'Taxa/hr ($)',
+    salePrice:'Preço Venda ($)',unitsMo:'Unidades / Mês',
+    cost:'Custo Total',profUnit:'Lucro / unidade',margin:'Margem',
+    saveProd:'Salvar Produto',clear:'Limpar',margins:'Margens',catalog:'Catálogo',
+    items:'Itens',reorderNow:'Repor Agora',lowStockLbl:'Estoque Baixo',totalVal:'Valor Total',
+    stockLevels:'Níveis de Estoque',addItem:'Adicionar Item',itemName:'Nome',
+    inStock:'Em Estoque',minimum:'Mínimo',unitCost:'Custo Unit ($)',supplier:'Fornecedor',addItemBtn:'Adicionar',noItems:'Sem itens',
+    goalTotal:'Total',onTrack:'No Caminho',behind:'Atrasadas',goalDone:'Concluídas',
+    progress:'Progresso',newGoal:'Nova Meta',goalDesc:'Descrição',
+    target:'Meta',current:'Atual',deadline:'Prazo',priority:'Prioridade',
+    high:'Alta',medium:'Média',low:'Baixa',saveGoal:'Salvar Meta',noGoals:'Sem metas',
+    myBiz:'Meu Negócio',bizName:'Nome do Negócio',language:'Idioma',
+    colors:'Cores',typography:'Tipografia',widgets:'Widgets do Dashboard',
+    data:'Dados',sampleData:'Carregar Dados de Exemplo',exportCSV:'Exportar CSV',signoutBtn:'Sair',
+    save:'Salvar',cancel:'Cancelar',reset:'Redefinir',
+    confirmDel:'Deletar este registro?',confirmSignout:'Sair?',
+    saved:'Salvo',deleted:'Deletado',sampleLoaded:'Dados de exemplo carregados!',
+    exported:'Exportado!',copiedId:'ID copiado ✓',fillRequired:'Preencha os campos obrigatórios',
+    saleSaved:'Venda salva',expSaved:'Despesa salva',apptSaved:'Agendamento salvo',
+    clientSaved:'Cliente salvo',petSaved:'Animal adicionado',goalSaved:'Meta salva',
+    orderCompleted:'Marcado como concluído ✓',
+    mn:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+  }
+};
+
+// ── STATE ────────────────────────────────────────────────────
+var lang=localStorage.getItem('bm_lang')||'en';
+var T=TL[lang];
+var accessToken=localStorage.getItem('bm_access_token')||'';
+var currentUser=null;
+var activeNicho=null; // the NICHOS object
+var SPREADSHEET_ID='';
+var CH={};
+var selectedNichoId=null;
+var DB={sales:[],expenses:[],orders:[],products:[],inventory:[],goals:[],clients:[],pets:[],appointments:[],settings:{},widgets:{},theme:{}};
+
+function saveDB(k){if(!activeNicho)return;localStorage.setItem('bm_'+activeNicho.id+'_'+k,JSON.stringify(DB[k]));}
+function loadDB(k){if(!activeNicho)return[];return JSON.parse(localStorage.getItem('bm_'+activeNicho.id+'_'+k)||'[]');}
+function loadDBObj(k){if(!activeNicho)return{};return JSON.parse(localStorage.getItem('bm_'+activeNicho.id+'_'+k)||'{}');}
+
+// ── LANG ─────────────────────────────────────────────────────
+function setLang(l){lang=l;T=TL[l];localStorage.setItem('bm_lang',l);document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('onclick')==="setLang('"+l+"')");});var s=document.getElementById('set-lang-sel');if(s)s.value=l;applyLangUI();}
+function applyLangUI(){
+  tt('login-sub',T.loginSub);tt('btn-google-txt',T.loginBtn);tt('login-note',T.loginNote);
+  tt('loading-txt',T.loading);tt('sel-title',T.selTitle);tt('sel-sub',T.selSub);
+  tt('sel-note',T.selNote);tt('btn-enter-txt',T.btnEnter);
+  tt('txt-signout',T.signout);tt('drawer-signout',T.signout);
+  tt('sync-text',T.synced);tt('cta-txt',T.addNew);
+  // rebuild nicho options with new lang
+  buildNichoOptions();
+}
+function tt(id,txt){var e=document.getElementById(id);if(e&&txt!==undefined)e.textContent=txt;}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function signIn(){
+  if(!window.google){toast('Refresh page','err');return;}
+  google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:function(r){
+    if(r.error){toast('Auth error','err');return;}
+    accessToken=r.access_token;
+    localStorage.setItem('bm_access_token',accessToken);
+    showScreen('screen-loading');
+    tt('loading-txt','Getting your profile...');
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+accessToken}})
+      .then(function(x){return x.json();})
+      .then(function(u){
+        currentUser=u;
+        localStorage.setItem('bm_user',JSON.stringify(u));
+        tt('loading-txt','Checking access...');
+        // Small delay to ensure token is ready
+        setTimeout(function(){
+          checkExistingNicho(u.email);
+        }, 300);
+      })
+      .catch(function(e){
+        console.error('Profile fetch failed:',e);
+        // If profile fetch fails, go back to login
+        showScreen('screen-login');
+        toast('Connection error, try again','err');
+      });
+  }}).requestAccessToken();
+}
+
+function signOut(){if(!confirm(T.confirmSignout))return;['bm_access_token','bm_user'].forEach(function(k){localStorage.removeItem(k);});location.reload();}
+
+// ── DEVELOPER MODE ──────────────────────────────────────────
+// Your secret email — always gets full access + can switch nichos
+var DEV_EMAIL = 'yvillegas215@gmail.com';
+var DEV_TAP_COUNT = 0;
+var DEV_TAP_TIMER = null;
+var IS_DEV = false;
+
+function devTap(){
+  DEV_TAP_COUNT++;
+  clearTimeout(DEV_TAP_TIMER);
+  DEV_TAP_TIMER=setTimeout(function(){DEV_TAP_COUNT=0;},1500);
+  if(DEV_TAP_COUNT>=5){
+    DEV_TAP_COUNT=0;
+    if(IS_DEV){
+      // Show nicho switcher
+      showScreen('screen-selector');
+      buildNichoOptions(true);
+    }
+  }
+}
+
+// Attach dev tap to logo elements
+function attachDevTap(){
+  ['sb-logo','drawer-logo'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.removeEventListener('click',devTap);el.addEventListener('click',devTap);}
+  });
+}
+
+async function checkExistingNicho(email){
+  // Dev gets full access always
+  IS_DEV=(email.toLowerCase()===DEV_EMAIL.toLowerCase());
+
+  if(IS_DEV){
+    var savedNicho=localStorage.getItem('bm_chosen_nicho_dev');
+    if(savedNicho&&NICHOS[savedNicho]){
+      openNicho(NICHOS[savedNicho]);
+    } else {
+      showScreen('screen-selector');
+      buildNichoOptions(true);
+    }
+    return;
+  }
+
+  // Check localStorage first (returning user)
+  var emailKey=btoa(email).replace(/=/g,'');
+  var savedNicho=localStorage.getItem('bm_chosen_nicho_'+emailKey);
+  if(savedNicho&&NICHOS[savedNicho]){
+    // Already chose before — go straight in without hitting the sheet
+    openNicho(NICHOS[savedNicho]);
+    return;
+  }
+
+  // New user — check admin sheet for permissions
+  tt('loading-txt','Checking access...');
+  var userNichos=[];
+  try{
+    userNichos=await loadUserAccess(email);
+  }catch(e){
+    userNichos=['bakery','nails','petgrooming']; // fallback
+  }
+
+  if(!userNichos||userNichos.length===0){
+    showScreen('screen-denied');
+    var deniedEmail=document.getElementById('denied-email');
+    if(deniedEmail)deniedEmail.textContent=email;
+    return;
+  }
+
+  if(userNichos.length===1){
+    selectedNichoId=userNichos[0];
+    localStorage.setItem('bm_chosen_nicho_'+emailKey,selectedNichoId);
+    showConnectScreen();
+    return;
+  }
+
+  // Multiple nichos — show selector
+  showScreen('screen-selector');
+  buildNichoOptions(false,userNichos);
+}
+
+async function loadUserAccess(email){
+  // If admin sheet not configured, default to all for testing
+  if(!ADMIN_SHEET_ID||ADMIN_SHEET_ID==='TU_ADMIN_SHEET_ID_AQUI'){
+    return ['bakery','nails','petgrooming'];
+  }
+  try{
+    // 5 second timeout
+    var controller=new AbortController();
+    var timeoutId=setTimeout(function(){controller.abort();},5000);
+    var r=await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+ADMIN_SHEET_ID+'/values/Access!A:B',
+      {headers:{Authorization:'Bearer '+accessToken},signal:controller.signal}
+    );
+    clearTimeout(timeoutId);
+    var d=await r.json();
+    if(d.error){
+      // API error — fall back to demo mode so app doesn't get stuck
+      console.warn('Sheet API error:',d.error.message);
+      return ['bakery','nails','petgrooming'];
+    }
+    if(d.values){
+      for(var i=0;i<d.values.length;i++){
+        var row=d.values[i];
+        if(row[0]&&row[0].toLowerCase().trim()===email.toLowerCase().trim()){
+          return row[1]?row[1].split(',').map(function(m){return m.trim();}):[];
+        }
+      }
+    }
+    // Email not found in sheet
+    return [];
+  }catch(e){
+    console.warn('loadUserAccess failed:',e);
+    // On any error (timeout, network, etc) — give access so app doesn't get stuck
+    return ['bakery','nails','petgrooming'];
+  }
+}
+
+// ── NICHO SELECTOR ───────────────────────────────────────────
+function buildNichoOptions(){
+  var container=document.getElementById('nicho-options');
+  if(!container)return;
+  var nichosArr=[NICHOS.bakery,NICHOS.nails,NICHOS.petgrooming];
+  var descriptions={
+    bakery:{en:'Custom cakes, pastries, cookies & baked goods. Track orders, ingredients, costs and sales.',es:'Tortas, pasteles, cookies y productos de panadería. Gestioná pedidos, ingredientes, costos y ventas.',pt:'Bolos, doces, cookies e produtos de padaria.'},
+    nails:{en:'Nail art, manicure & pedicure studio. Manage appointments, clients, products and revenue.',es:'Estudio de uñas, manicura y pedicura. Gestioná turnos, clientas, productos e ingresos.',pt:'Estúdio de unhas, manicure e pedicure.'},
+    petgrooming:{en:'Dog & cat grooming services. Track appointments, pet profiles, supplies and revenue.',es:'Servicios de grooming para perros y gatos. Gestioná turnos, fichas de mascotas, insumos e ingresos.',pt:'Serviços de banho e tosa. Gerencie agendamentos, fichas de animais e receitas.'},
+  };
+  container.innerHTML=nichosArr.map(function(n){
+    var desc=descriptions[n.id][lang]||descriptions[n.id].en;
+    return '<div class="nicho-opt" id="opt-'+n.id+'" onclick="selectNicho(\''+n.id+'\')">'+
+      '<div class="nicho-opt-icon" style="background:'+n.color+'22">'+n.icon+'</div>'+
+      '<div class="nicho-opt-info">'+
+        '<div class="nicho-opt-name">'+n.name+'</div>'+
+        '<div class="nicho-opt-desc">'+desc+'</div>'+
+      '</div>'+
+      '<div class="nicho-opt-radio" id="radio-'+n.id+'"></div>'+
+    '</div>';
+  }).join('');
+}
+
+function selectNicho(id){
+  selectedNichoId=id;
+  document.querySelectorAll('.nicho-opt').forEach(function(el){el.classList.remove('selected');});
+  document.getElementById('opt-'+id).classList.add('selected');
+  document.getElementById('btn-enter').classList.add('ready');
+}
+
+function confirmNicho(){
+  if(!selectedNichoId)return;
+  var n=NICHOS[selectedNichoId];
+  if(!n)return;
+  // Save choice permanently for this user
+  if(currentUser){
+    var key='bm_chosen_nicho_'+btoa(currentUser.email).replace(/=/g,'');
+    localStorage.setItem(key,selectedNichoId);
+  }
+  openNicho(n);
+}
+
+function openNicho(n){
+  activeNicho=n;
+  // Apply nicho color
+  document.documentElement.style.setProperty('--primary',n.color);
+  document.documentElement.style.setProperty('--primary-l',hexAlpha(n.color,.12));
+  document.documentElement.style.setProperty('--primary-d',darken(n.color));
+  // Sidebar
+  tt('sb-biz-name',n.name);tt('sb-nicho-lbl',n.name);
+  tt('drawer-biz-name',n.name);
+  document.getElementById('sb-logo').textContent=n.icon;
+  document.getElementById('drawer-logo').textContent=n.icon;
+  // Load data
+  DB.sales=loadDB('sales');DB.expenses=loadDB('expenses');DB.orders=loadDB('orders');
+  DB.products=loadDB('products');DB.inventory=loadDB('inventory');DB.goals=loadDB('goals');
+  DB.clients=loadDB('clients');DB.pets=loadDB('pets');DB.appointments=loadDB('appointments');
+  DB.settings=loadDBObj('settings');DB.widgets=loadDBObj('widgets');DB.theme=loadDBObj('theme');
+  SPREADSHEET_ID=localStorage.getItem('bm_sheet_id_'+n.id)||'';
+  // Populate modal selects
+  populateSel('ms-cat',n.saleCats);populateSel('me-cat',n.expCats);
+  populateSel('ms-pay',n.payMethods);
+  // Build UI
+  buildNav();buildPages();applyTheme();applyWidgets();
+  if(DB.settings.name){tt('sb-biz-name',DB.settings.name);tt('drawer-biz-name',DB.settings.name);}
+  showScreen(null);document.getElementById('app').classList.add('active');
+  go('dashboard');
+  attachDevTap();
+  if(!SPREADSHEET_ID)initSheet();
+}
+
+function hexAlpha(hex,a){var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return 'rgba('+r+','+g+','+b+','+a+')';}
+function darken(hex){return 'rgb('+Math.max(0,parseInt(hex.slice(1,3),16)-30)+','+Math.max(0,parseInt(hex.slice(3,5),16)-30)+','+Math.max(0,parseInt(hex.slice(5,7),16)-30)+')';}
+function populateSel(id,opts){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts.map(function(o){return '<option>'+o+'</option>';}).join('');}
+
+// ── BUILD NAV ─────────────────────────────────────────────────
+function buildNav(){
+  if(!activeNicho)return;
+  var h='';
+  var sections={dashboard:'overview',sales:'daily',expenses:'daily',appointments:'daily',orders:'daily',clients:'business',pets:'business',products:'business',inventory:'business',goals:'business',settings:'config'};
+  var sectionLabels={overview:T.overview,daily:T.daily,business:T.business,config:T.config};
+  var lastSec='';
+  activeNicho.nav.forEach(function(item){
+    var sec=sections[item.page]||'';
+    if(sec!==lastSec){h+='<div class="nav-sec">'+sectionLabels[sec]+'</div>';lastSec=sec;}
+    h+='<div class="nav-item" onclick="go(\''+item.page+'\');closeDrawer()">'+
+      '<span class="nav-ic">'+item.icon+'</span>'+
+      '<span class="nav-lbl">'+item.lbl+'</span>'+
+      (item.badge?'<span class="nav-badge" id="'+item.badge+'" style="display:none">0</span>':'')+
+      '<span class="nav-tip">'+item.lbl+'</span>'+
+    '</div>';
+  });
+  document.getElementById('sidebar-nav').innerHTML=h;
+  document.getElementById('drawer-nav').innerHTML=h;
+}
+
+// ── BUILD PAGES ───────────────────────────────────────────────
+function buildPages(){
+  if(!activeNicho)return;
+  var id=activeNicho.id;
+  var html='';
+  if(id==='bakery')html=buildBakeryPages();
+  else if(id==='nails')html=buildNailsPages();
+  else if(id==='petgrooming')html=buildPetPages();
+  document.getElementById('app-scroll').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🧁 BAKERY PAGES
+// ══════════════════════════════════════════════════════════════
+function buildBakeryPages(){
+  return dashPage()+salesPage()+expPage()+
+  // ORDERS
+  `<div class="page" id="page-orders">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="o-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value" style="color:var(--warning)" id="o-pend">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Completed</div><div class="kpi-value" style="color:var(--success)" id="o-comp">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Balance Due</div><div class="kpi-value" id="o-bal">$0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Order Tracker</div><button class="btn-save" onclick="openModal('m-order')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ New Order</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Price</th><th>Deposit</th><th>Balance</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody id="ord-tbody"></tbody></table></div>
+    </div>
+  </div>`+
+  productPage()+invPage('Ingredients & Supplies')+goalsPage()+settingsPage();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 💅 NAIL STUDIO PAGES
+// ══════════════════════════════════════════════════════════════
+function buildNailsPages(){
+  return dashPage()+salesPage()+expPage()+
+  // APPOINTMENTS
+  `<div class="page" id="page-appointments">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" id="a-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Today</div><div class="kpi-value" style="color:var(--primary)" id="a-today">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Upcoming</div><div class="kpi-value" style="color:var(--warning)" id="a-upcoming">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Revenue This Month</div><div class="kpi-value" id="a-rev">$0</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Today's Appointments</div><button class="btn-save" onclick="openModal('m-order')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ New</button></div>
+        <div id="appt-today-list"><div class="empty">No appointments today</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Upcoming</div><span class="card-tag">Next 7 days</span></div>
+        <div id="appt-upcoming-list"><div class="empty">No upcoming appointments</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">All Appointments</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Client</th><th>Service</th><th>Price</th><th>Deposit</th><th>Balance</th><th>Status</th><th></th></tr></thead><tbody id="ord-tbody"></tbody></table></div>
+    </div>
+  </div>`+
+  // CLIENTS
+  `<div class="page" id="page-clients">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">Total Clients</div><div class="kpi-value" id="cl-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Regulars (3+ visits)</div><div class="kpi-value" style="color:var(--success)" id="cl-reg">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Avg Revenue / Client</div><div class="kpi-value" id="cl-avg">$0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Client Book</div><button class="btn-save" onclick="openModal('m-client')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ Add Client</button></div>
+      <div id="clients-list"><div class="empty">No clients yet. Add your first client!</div></div>
+    </div>
+  </div>`+
+  invPage('Products & Supplies')+goalsPage()+settingsPage();
+}
+
+// ══════════════════════════════════════════════════════════════
+// 🐾 PET GROOMING PAGES
+// ══════════════════════════════════════════════════════════════
+function buildPetPages(){
+  return dashPage()+salesPage()+expPage()+
+  // APPOINTMENTS
+  `<div class="page" id="page-appointments">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" id="a-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Today</div><div class="kpi-value" style="color:var(--primary)" id="a-today">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Upcoming</div><div class="kpi-value" style="color:var(--warning)" id="a-upcoming">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">Revenue This Month</div><div class="kpi-value" id="a-rev">$0</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Today's Grooming</div><button class="btn-save" onclick="openModal('m-order')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ New</button></div>
+        <div id="appt-today-list"><div class="empty">No appointments today</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Upcoming</div><span class="card-tag">Next 7 days</span></div>
+        <div id="appt-upcoming-list"><div class="empty">No upcoming appointments</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">All Appointments</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Pet</th><th>Owner</th><th>Service</th><th>Size</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody id="ord-tbody"></tbody></table></div>
+    </div>
+  </div>`+
+  // PET CLIENTS
+  `<div class="page" id="page-pets">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">Total Pets</div><div class="kpi-value" id="pt-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Dogs</div><div class="kpi-value" id="pt-dogs">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Cats</div><div class="kpi-value" id="pt-cats">0</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Pet Client Book</div><button class="btn-save" onclick="openModal('m-pet')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ Add Pet</button></div>
+      <div id="pets-list"><div class="empty">No pets registered yet. Add your first client!</div></div>
+    </div>
+  </div>`+
+  invPage('Grooming Supplies')+goalsPage()+settingsPage();
+}
+
+// ── SHARED PAGE BUILDERS ─────────────────────────────────────
+function dashPage(){
+  return `<div class="page active" id="page-dashboard">
+    <div class="welcome-banner" id="welcome-banner">
+      <div class="welcome-text" id="welcome-text">Hello! 👋</div>
+      <div class="welcome-sub" id="welcome-sub">Here's your business overview</div>
+    </div>
+    <div class="kpi-grid kpi-4" id="kpi-container">
+      <div class="kpi-card" id="w-revenue"><div class="kpi-top"><div class="kpi-icon" style="background:var(--success-l);color:var(--success)">💰</div></div><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="d-rev">$0</div><div class="kpi-sub">all time</div></div>
+      <div class="kpi-card" id="w-orders-kpi"><div class="kpi-top"><div class="kpi-icon" style="background:var(--primary-l);color:var(--primary)">📋</div></div><div class="kpi-label" id="d-appt-lbl">Active Orders</div><div class="kpi-value" id="d-orders-cnt">0</div><div class="kpi-sub" id="d-appt-sub">in progress</div></div>
+      <div class="kpi-card" id="w-stock-kpi"><div class="kpi-top"><div class="kpi-icon" style="background:var(--warning-l);color:var(--warning)">📦</div></div><div class="kpi-label">Low Stock</div><div class="kpi-value" id="d-stock">0</div><div class="kpi-sub">items to reorder</div></div>
+      <div class="kpi-card accent" id="w-balance" onclick="go('orders')"><div class="kpi-top"><div class="kpi-icon" style="background:rgba(255,255,255,.2)">💳</div></div><div class="kpi-label" id="d-bal-lbl">Pending Payments</div><div class="kpi-value" id="d-balance">$0</div></div>
+    </div>
+    <div class="g65" id="w-recent-section">
+      <div class="card"><div class="card-hdr"><div class="card-title" id="d-recent-title">Recent Sales</div><span class="card-tag">Last 5</span></div><div id="d-recent"><div class="empty">No sales yet</div></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title" id="d-pending-title">Upcoming / Pending</div><a class="card-link" id="d-seeall" onclick="go('orders')">See all →</a></div><div id="d-pending"><div class="empty">Nothing pending</div></div></div>
+    </div>
+    <div class="g2" id="w-charts-section">
+      <div class="card"><div class="card-hdr"><div class="card-title">Revenue</div><span class="card-tag">6 months</span></div><div class="chart-wrap"><canvas id="ch-rev"></canvas></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">By Category</div></div><div class="chart-wrap"><canvas id="ch-cat"></canvas></div></div>
+    </div>
+    <div class="g2" id="w-bottom-section">
+      <div class="card"><div class="card-hdr"><div class="card-title">Expenses by Category</div></div><div id="d-exp-cats"><div class="empty">—</div></div></div>
+      <div class="card-dark"><div class="card-hdr"><div class="card-title">Low Supplies</div></div><div id="d-stock-list"><div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-size:13px">All supplies OK ✓</div></div></div>
+    </div>
+  </div>`;
+}
+
+function salesPage(){
+  return `<div class="page" id="page-sales">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Total Revenue</div><div class="kpi-value" id="s-rev">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Transactions</div><div class="kpi-value" id="s-cnt">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Average</div><div class="kpi-value" id="s-avg">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Top Service</div><div class="kpi-value" style="font-size:16px;margin-top:4px" id="s-best">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Sales Log</div><button class="btn-save" onclick="openModal('m-sale')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ New Sale</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Service / Product</th><th>Qty</th><th>Total</th><th>Payment</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div>
+    </div>
+  </div>`;
+}
+
+function expPage(){
+  return `<div class="page" id="page-expenses">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">Total Expenses</div><div class="kpi-value" id="e-tot">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">This Month</div><div class="kpi-value" id="e-month">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Top Category</div><div class="kpi-value" style="font-size:16px;margin-top:4px" id="e-big">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Expense Log</div><button class="btn-save" onclick="openModal('m-exp')" style="padding:8px 16px;border-radius:8px;font-size:12px">+ Add Expense</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody id="exp-tbody"></tbody></table></div>
+    </div>
+  </div>`;
+}
+
+function invPage(title){
+  return `<div class="page" id="page-inventory">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Items</div><div class="kpi-value" id="i-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--danger)">Reorder Now</div><div class="kpi-value" style="color:var(--danger)" id="i-red">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--warning)">Low Stock</div><div class="kpi-value" style="color:var(--warning)" id="i-low">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">Total Value</div><div class="kpi-value" id="i-val">$0</div></div>
+    </div>
+    <div class="g56">
+      <div class="card"><div class="card-hdr"><div class="card-title">${title}</div></div><div id="inv-list"><div class="empty">No items yet</div></div></div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Add Item</div></div>
+        <div class="fg"><label class="fl">Name</label><input class="fi" id="i-name" placeholder="Item name"></div>
+        <div class="r2"><div class="fg"><label class="fl">Category</label><select class="fi" id="i-cat"><option>Supplies</option><option>Equipment</option><option>Packaging</option><option>Other</option></select></div><div class="fg"><label class="fl">Unit</label><select class="fi" id="i-unit"><option>unit</option><option>pack</option><option>kg</option><option>g</option><option>liters</option><option>bottle</option></select></div></div>
+        <div class="r2"><div class="fg"><label class="fl">In Stock</label><input class="fi" id="i-stock" type="number" placeholder="0"></div><div class="fg"><label class="fl">Minimum</label><input class="fi" id="i-min" type="number" placeholder="0"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">Unit Cost ($)</label><input class="fi" id="i-cost" type="number" placeholder="0.00"></div><div class="fg"><label class="fl">Supplier</label><input class="fi" id="i-sup" placeholder="Supplier name"></div></div>
+        <button class="btn-save" style="width:100%;padding:11px;border-radius:10px;margin-top:4px" onclick="addInv()">Add Item</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function productPage(){
+  return `<div class="page" id="page-products">
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Cost Calculator</div></div>
+        <div class="fg"><label class="fl">Product Name</label><input class="fi" id="c-name" placeholder="e.g. Birthday Cake 6 inch"></div>
+        <div class="r2"><div class="fg"><label class="fl">Ingredients ($)</label><input class="fi" id="c-ing" type="number" placeholder="0.00" oninput="calcM()"></div><div class="fg"><label class="fl">Packaging ($)</label><input class="fi" id="c-pkg" type="number" placeholder="0.00" oninput="calcM()"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">Labor Hours</label><input class="fi" id="c-hrs" type="number" placeholder="0" oninput="calcM()"></div><div class="fg"><label class="fl">Rate / hr ($)</label><input class="fi" id="c-rate" type="number" placeholder="0.00" oninput="calcM()"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">Sale Price ($)</label><input class="fi" id="c-price" type="number" placeholder="0.00" oninput="calcM()"></div><div class="fg"><label class="fl">Units / Month</label><input class="fi" id="c-units" type="number" placeholder="0"></div></div>
+        <div class="calc-out" id="calc-out">
+          <div class="calc-row"><span>Ingredients</span><span id="cr-ing">$0</span></div>
+          <div class="calc-row"><span>Packaging</span><span id="cr-pkg">$0</span></div>
+          <div class="calc-row"><span>Labor</span><span id="cr-lab">$0</span></div>
+          <div class="calc-total"><span>Total Cost</span><span id="cr-cost">$0</span></div>
+          <div class="calc-profit"><span>Profit / unit</span><span id="cr-prof">$0</span></div>
+          <div class="calc-margin"><span>Margin</span><span id="cr-mg">0%</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn-save" onclick="saveProduct()" style="flex:1;padding:10px;border-radius:10px">Save Product</button>
+          <button class="btn-cancel" onclick="clearCalc()">Clear</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-hdr"><div class="card-title">Margins</div></div><div class="chart-wrap"><canvas id="ch-mg"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">Product Catalog</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Cost</th><th>Price</th><th>Profit</th><th>Margin</th><th>Units/mo</th><th></th></tr></thead><tbody id="prod-tbody"></tbody></table></div>
+    </div>
+  </div>`;
+}
+
+function goalsPage(){
+  return `<div class="page" id="page-goals">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">Total</div><div class="kpi-value" id="g-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--success)">On Track</div><div class="kpi-value" style="color:var(--success)" id="g-on">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--danger)">Behind</div><div class="kpi-value" style="color:var(--danger)" id="g-beh">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--primary)">Completed</div><div class="kpi-value" style="color:var(--primary)" id="g-done">0</div></div>
+    </div>
+    <div class="g56">
+      <div class="card"><div class="card-hdr"><div class="card-title">Progress</div></div><div id="goals-list"><div class="empty">No goals set</div></div></div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">New Goal</div></div>
+        <div class="fg"><label class="fl">Description</label><input class="fi" id="g-name" placeholder="e.g. Monthly Revenue Target"></div>
+        <div class="r2"><div class="fg"><label class="fl">Target</label><input class="fi" id="g-target" type="number" placeholder="0"></div><div class="fg"><label class="fl">Current</label><input class="fi" id="g-current" type="number" placeholder="0"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">Deadline</label><input class="fi" id="g-dead" type="date"></div><div class="fg"><label class="fl">Priority</label><select class="fi" id="g-pri"><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+        <button class="btn-save" style="width:100%;padding:11px;border-radius:10px;margin-top:4px" onclick="addGoal()">Save Goal</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function settingsPage(){
+  return `<div class="page" id="page-settings">
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">My Business</div></div>
+        <div class="fg"><label class="fl">Business Name</label><input class="fi" id="set-name" placeholder="Business name" oninput="updateBizName(this.value)"></div>
+        <div class="fg"><label class="fl">Language</label><select class="fi" id="set-lang-sel" onchange="setLang(this.value)"><option value="en">🇺🇸 English</option><option value="es">🇪🇸 Español</option><option value="pt">🇧🇷 Português</option></select></div>
+        <button class="btn-save" onclick="saveSettings()" style="padding:10px 20px;border-radius:10px;font-size:13px">Save</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Google Sheets</div></div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">Your data syncs to a Sheet in your Drive automatically.</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn-save" onclick="openSheet()" style="padding:9px 16px;border-radius:10px;font-size:12px">Open in Drive</button>
+          <button class="btn-cancel" onclick="shareSheetId()" style="padding:9px 16px;border-radius:10px;font-size:12px;border:1px solid var(--border)">Copy ID</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">Colors</div><button class="btn-cancel" onclick="resetColors()" style="padding:6px 14px;border-radius:8px;font-size:12px;border:1px solid var(--border)">Reset</button></div>
+      <div class="settings-grid">
+        <div><div class="fl" style="margin-bottom:8px">Main</div>
+          <div class="setting-row"><span class="setting-label">Primary</span><input type="color" class="clr-input" id="clr-primary" value="#6C63FF" oninput="setVar('--primary',this.value);updatePS(this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Success</span><input type="color" class="clr-input" value="#22C55E" oninput="setVar('--success',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Danger</span><input type="color" class="clr-input" value="#EF4444" oninput="setVar('--danger',this.value)"></div>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Backgrounds</div>
+          <div class="setting-row"><span class="setting-label">Background</span><input type="color" class="clr-input" value="#F4F6FB" oninput="setVar('--bg',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Cards</span><input type="color" class="clr-input" value="#FFFFFF" oninput="setVar('--card',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Sidebar</span><input type="color" class="clr-input" value="#FFFFFF" oninput="setVar('--sidebar',this.value)"></div>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Text</div>
+          <div class="setting-row"><span class="setting-label">Primary</span><input type="color" class="clr-input" value="#111827" oninput="setVar('--text',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Secondary</span><input type="color" class="clr-input" value="#6B7280" oninput="setVar('--text2',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Warning</span><input type="color" class="clr-input" value="#F59E0B" oninput="setVar('--warning',this.value)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">Typography</div></div>
+      <div class="settings-grid">
+        <div><div class="fl" style="margin-bottom:8px">Font Family</div>
+          <select class="font-sel" onchange="setFont(this.value)"><option value="'Inter',sans-serif">Inter (default)</option><option value="'Playfair Display',serif">Playfair Display</option><option value="'Georgia',serif">Georgia</option><option value="'Arial',sans-serif">Arial</option><option value="'Verdana',sans-serif">Verdana</option></select>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Size</div>
+          <div class="setting-row"><span class="setting-label">Size (px)</span><input type="number" class="sz-input" value="14" min="11" max="18" oninput="setVar('--font-size',this.value+'px')"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">Dashboard Widgets</div></div>
+      <div class="widget-item"><div><div class="widget-name">Welcome Banner</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('welcome-banner',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Revenue KPI</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-revenue',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Orders / Appointments KPI</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-orders-kpi',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Stock KPI</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-stock-kpi',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Balance KPI</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-balance',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Recent Activity</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-recent-section',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Charts</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-charts-section',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div><div class="widget-name">Expenses & Supplies</div></div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-bottom-section',this.checked)"><span class="toggle-slider"></span></label></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">Data</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-cancel" onclick="loadSample()" style="padding:10px 16px;border-radius:10px;font-size:13px;border:1px solid var(--border)">Load Sample Data</button>
+        <button class="btn-cancel" onclick="exportCSV()" style="padding:10px 16px;border-radius:10px;font-size:13px;border:1px solid var(--border)">Export CSV</button>
+        <button onclick="signOut()" style="background:var(--danger-l);color:var(--danger);border:none;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Sign Out</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── SHEETS API ────────────────────────────────────────────────
+function setSS(st,tx){var p=document.getElementById('sync-pill');var t=document.getElementById('sync-text');if(p)p.className='sync-pill '+st;if(t)t.textContent=tx;}
+async function shReq(method,url,body){
+  if(!accessToken||!SPREADSHEET_ID)return null;setSS('syncing','...');
+  try{var o={method,headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'}};if(body)o.body=JSON.stringify(body);var r=await fetch('https://sheets.googleapis.com/v4/spreadsheets'+url,o);var d=await r.json();setSS('synced',T.synced);return d;}catch(e){setSS('error','Error');return null;}
+}
+async function initSheet(){
+  var n=activeNicho;
+  var sheets=n.sheets.map(function(s){return {properties:{title:s}};});
+  var ns=await shReq('POST','',{properties:{title:'Business Manager — '+n.name},sheets});
+  if(ns&&ns.spreadsheetId){
+    SPREADSHEET_ID=ns.spreadsheetId;localStorage.setItem('bm_sheet_id_'+n.id,SPREADSHEET_ID);
+    // Write headers for each sheet
+    var headers={
+      Sales:[['Date','Category','Product/Service','Qty','Price','Total','Payment','Notes']],
+      Expenses:[['Date','Category','Description','Amount','Notes']],
+      Orders:[['Client','Service','Date','Due/Appt','Price','Deposit','Balance','Notes','Status']],
+      Appointments:[['Client','Service','Date','Time','Price','Deposit','Balance','Notes','Status']],
+      Products:[['Name','IngCost','Pkg','LaborHrs','Rate','TotalCost','SalePrice','Profit','Margin','Units']],
+      Inventory:[['Name','Category','Unit','Stock','Min','Cost','Supplier']],
+      Supplies:[['Name','Category','Unit','Stock','Min','Cost','Supplier']],
+      Goals:[['Goal','Target','Current','Deadline','Priority']],
+      Clients:[['Name','Phone','Preferences','Referral','Date']],
+      Pets:[['PetName','Owner','Species','Breed','Size','Phone','Notes','Date']],
+    };
+    for(var sheet of n.sheets){
+      if(headers[sheet]){
+        await shReq('PUT','/'+SPREADSHEET_ID+'/values/'+sheet+'!A1:Z1?valueInputOption=RAW',{values:headers[sheet]});
+      }
+    }
+  }
+}
+async function appSh(tab,vals){if(!accessToken||!SPREADSHEET_ID)return;await shReq('POST','/'+SPREADSHEET_ID+'/values/'+tab+'!A:Z:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[vals]});}
+function openSheet(){if(SPREADSHEET_ID)window.open('https://docs.google.com/spreadsheets/d/'+SPREADSHEET_ID,'_blank');}
+function shareSheetId(){if(!SPREADSHEET_ID){toast('No sheet','err');return;}navigator.clipboard.writeText(SPREADSHEET_ID).then(function(){toast(T.copiedId);}).catch(function(){prompt('Copy:',SPREADSHEET_ID);});}
+
+// ── NAV & ROUTING ─────────────────────────────────────────────
+var pCfg={
+  dashboard:{cta:false},
+  sales:{cta:true,modal:'m-sale'},expenses:{cta:true,modal:'m-exp'},
+  orders:{cta:true,modal:'m-order'},appointments:{cta:true,modal:'m-order'},
+  clients:{cta:true,modal:'m-client'},pets:{cta:true,modal:'m-pet'},
+  products:{cta:false},inventory:{cta:false},goals:{cta:false},settings:{cta:false}
+};
+var pageTitles={
+  dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',orders:'Orders',
+  appointments:'Appointments',clients:'Clients',pets:'Pet Clients',
+  products:'Cost Calculator',inventory:'Supplies',goals:'Goals',settings:'Settings'
+};
+
+function go(page){
+  document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(e){if(e.getAttribute('onclick')&&e.getAttribute('onclick').indexOf("go('"+page+"')")>-1)e.classList.add('active');});
+  document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active');});
+  var pg=document.getElementById('page-'+page);if(pg)pg.classList.add('active');
+  tt('ptitle',pageTitles[page]||page);tt('mobile-title',pageTitles[page]||page);
+  var cfg=pCfg[page]||{};
+  var cb=document.getElementById('cta-btn');if(cb)cb.style.display=cfg.cta?'':'none';
+  if(page==='dashboard')loadDash();
+  if(page==='sales')loadSales();
+  if(page==='expenses')loadExpenses();
+  if(page==='orders'||page==='appointments')loadOrders();
+  if(page==='clients')loadClients();
+  if(page==='pets')loadPets();
+  if(page==='products')loadProducts();
+  if(page==='inventory')loadInventory();
+  if(page==='goals')loadGoals();
+}
+
+function openCTA(){var p=document.querySelector('.nav-item.active');if(!p)return;var m=p.getAttribute('onclick').match(/'(\w+)'/);if(!m)return;var cfg=pCfg[m[1]];if(cfg&&cfg.modal)openModal(cfg.modal);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)el.classList.remove('open');});});
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});if(id)document.getElementById(id).classList.add('active');}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('collapsed');}
+function openDrawer(){document.getElementById('drawer').style.display='block';}
+function closeDrawer(){document.getElementById('drawer').style.display='none';}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function $n(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function $d(n){return '$'+(parseFloat(n)||0).toFixed(2);}
+function v(id){var e=document.getElementById(id);return e?e.value:'';}
+function pf(id){return parseFloat(v(id))||0;}
+function set(id,val){var e=document.getElementById(id);if(e)e.textContent=val;}
+function clr(ids){ids.forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});}
+function today(){return new Date().toISOString().split('T')[0];}
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'ok')+' show';setTimeout(function(){t.classList.remove('show');},2600);}
+
+// ── DASHBOARD ─────────────────────────────────────────────────
+function loadDash(){
+  var sales=DB.sales,expenses=DB.expenses,orders=DB.orders,inv=DB.inventory,n=activeNicho;
+  var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();
+  var totalRev=0,monthly={},cats={},expCats={};
+  sales.forEach(function(r){var a=parseFloat(r.total)||0;totalRev+=a;var d=new Date(r.date);if(!isNaN(d)){var k=d.getFullYear()+'-'+d.getMonth();monthly[k]=(monthly[k]||0)+a;}cats[r.category]=(cats[r.category]||0)+a;});
+  expenses.forEach(function(r){expCats[r.category]=(expCats[r.category]||0)+(parseFloat(r.amount)||0);});
+  var pending=orders.filter(function(o){return o.status!=='Completed';});
+  var balDue=pending.reduce(function(ss,o){return ss+(parseFloat(o.balance)||0);},0);
+  var reorder=inv.filter(function(i){return parseFloat(i.stock)<=parseFloat(i.min);});
+  set('d-rev',$n(totalRev));set('d-orders-cnt',pending.length);set('d-stock',reorder.length);set('d-balance',$n(balDue));
+  var uname=(currentUser&&currentUser.name)||'User';
+  var wt=document.getElementById('welcome-text');if(wt)wt.textContent='Hello, '+uname.split(' ')[0]+'! 👋';
+  var ws=document.getElementById('welcome-sub');if(ws)ws.textContent='Here\'s your '+n.name+' overview — '+new Date().toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long'});
+  var ppage=n.id==='bakery'?'orders':'appointments';
+  var dalbl=document.getElementById('d-seeall');if(dalbl)dalbl.setAttribute('onclick',"go('"+ppage+"')");
+  var colors=['#6C63FF','#22C55E','#EF4444','#F59E0B','#EC4899'];
+  var recEl=document.getElementById('d-recent');
+  if(recEl){var recent=sales.slice(-5).reverse();if(!recent.length){recEl.innerHTML='<div class="empty">No sales yet</div>';}else{recEl.innerHTML=recent.map(function(r){var ci=(r.product||'').charCodeAt(0)%colors.length;var ini=(r.product||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();return '<div class="list-row"><div class="list-av" style="background:'+colors[ci]+'22;color:'+colors[ci]+'">'+ini+'</div><div><div class="list-name">'+r.product+'</div><div class="list-sub">'+r.category+' · '+r.date+'</div></div><div class="list-r"><div class="list-amount">'+$d(r.total)+'</div></div></div>';}).join('');}}
+  var pendEl=document.getElementById('d-pending');
+  if(pendEl){if(!pending.length){pendEl.innerHTML='<div class="empty">Nothing pending</div>';}else{pendEl.innerHTML=pending.slice(0,4).map(function(o){var ini=(o.customer||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();var ov=o.dueDate&&new Date(o.dueDate)<new Date();return '<div class="list-row"><div class="list-av" style="background:var(--primary-l);color:var(--primary)">'+ini+'</div><div><div class="list-name">'+o.customer+'</div><div class="list-sub">'+o.product+'</div></div><div class="list-r"><div class="list-amount">'+$d(o.balance)+'</div><div class="list-status" style="color:'+(ov?'var(--danger)':'var(--warning)')+'"> '+(ov?'OVERDUE':'PEND.')+'</div></div></div>';}).join('');}}
+  var m6=[];for(var i=5;i>=0;i--){var d2=new Date(thisY,thisM-i,1);m6.push({label:T.mn[d2.getMonth()],rev:monthly[d2.getFullYear()+'-'+d2.getMonth()]||0});}
+  renderRevChart(m6);renderCatChart(cats);
+  var expEl=document.getElementById('d-exp-cats');
+  if(expEl){var te=Object.values(expCats).reduce(function(a,b){return a+b;},0)||1;if(!Object.keys(expCats).length){expEl.innerHTML='<div class="empty">—</div>';}else{expEl.innerHTML=Object.entries(expCats).sort(function(a,b){return b[1]-a[1];}).slice(0,5).map(function(e){var pct=Math.round(e[1]/te*100);return '<div class="prog-row"><div class="prog-hdr"><span class="prog-label">'+e[0]+'</span><span class="prog-pct">'+$n(e[1])+'</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div></div>';}).join('');}}
+  var stEl=document.getElementById('d-stock-list');
+  if(stEl){var crit=inv.filter(function(i){return parseFloat(i.stock)<=parseFloat(i.min)*1.5;}).slice(0,5);if(!crit.length){stEl.innerHTML='<div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-size:13px">All supplies OK ✓</div>';}else{stEl.innerHTML=crit.map(function(item){var st=parseFloat(item.stock)<=parseFloat(item.min)?'🔴':'🟡';return '<div class="stock-row"><div><div style="font-size:13px;font-weight:600;color:white">'+item.name+'</div><div style="font-size:11px;color:rgba(255,255,255,.4)">'+item.category+'</div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:700;color:white">'+item.stock+' '+item.unit+'</span><span>'+st+'</span></div></div>';}).join('');}}
+  var badge=document.getElementById('orders-badge')||document.getElementById('appt-badge');
+  if(badge){if(pending.length){badge.style.display='';badge.textContent=pending.length;}else{badge.style.display='none';}}
+}
+
+function renderRevChart(months){var ctx=document.getElementById('ch-rev');if(!ctx)return;if(CH.rev)CH.rev.destroy();var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#6C63FF';CH.rev=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:months.map(function(m){return m.label;}),datasets:[{data:months.map(function(m){return m.rev;}),backgroundColor:c+'33',borderColor:c,borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:function(v){return '$'+v.toLocaleString();},font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});}
+function renderCatChart(cats){var ctx=document.getElementById('ch-cat');if(!ctx)return;if(CH.cat)CH.cat.destroy();var labels=Object.keys(cats),vals=Object.values(cats);if(!labels.length)return;var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#6C63FF';var colors=[c,'#22C55E','#EF4444','#F59E0B','#EC4899','#06B6D4','#A855F7','#84CC16'];CH.cat=new Chart(ctx.getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:10},padding:10,boxWidth:10}}}}});}
+
+// ── SALES ────────────────────────────────────────────────────
+function loadSales(){var rows=DB.sales,total=0,cats={};rows.forEach(function(r){total+=parseFloat(r.total)||0;cats[r.category]=(cats[r.category]||0)+(parseFloat(r.total)||0);});var avg=rows.length?total/rows.length:0;var best=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'—';set('s-rev',$n(total));set('s-cnt',rows.length);set('s-avg',$n(avg));set('s-best',best);var tbody=document.getElementById('sales-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">No sales yet</div></td></tr>';return;}tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;return '<tr><td class="td-muted">'+r.date+'</td><td><span class="badge b-primary">'+r.category+'</span></td><td class="td-name">'+r.product+'</td><td class="td-muted">'+r.qty+'</td><td class="td-money">'+$d(r.total)+'</td><td class="td-muted">'+r.payment+'</td><td><button class="ibtn" onclick="del(\'sales\','+ri+')">✕</button></td></tr>';}).join('');}
+function saveSale(){var d={date:v('ms-date'),category:v('ms-cat'),product:v('ms-prod'),qty:v('ms-qty')||1,price:pf('ms-price'),payment:v('ms-pay'),notes:v('ms-notes')};if(!d.product||!d.price){toast(T.fillRequired,'err');return;}d.total=((parseFloat(d.qty)||1)*d.price).toFixed(2);DB.sales.push(d);saveDB('sales');appSh('Sales',[d.date,d.category,d.product,d.qty,d.price,d.total,d.payment,d.notes]);toast(T.saleSaved);closeModal('m-sale');clr(['ms-prod','ms-price','ms-notes']);document.getElementById('ms-qty').value='1';loadSales();loadDash();}
+
+// ── EXPENSES ─────────────────────────────────────────────────
+function loadExpenses(){var rows=DB.expenses,total=0,mt=0,cats={};var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();rows.forEach(function(r){var a=parseFloat(r.amount)||0;total+=a;cats[r.category]=(cats[r.category]||0)+a;var d=new Date(r.date);if(!isNaN(d)&&d.getMonth()===thisM&&d.getFullYear()===thisY)mt+=a;});var big=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'—';set('e-tot',$n(total));set('e-month',$n(mt));set('e-big',big);var tbody=document.getElementById('exp-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">—</div></td></tr>';return;}tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;return '<tr><td class="td-muted">'+r.date+'</td><td><span class="badge b-danger">'+r.category+'</span></td><td class="td-name">'+r.description+'</td><td class="td-neg td-money">'+$d(r.amount)+'</td><td><button class="ibtn" onclick="del(\'expenses\','+ri+')">✕</button></td></tr>';}).join('');}
+function saveExpense(){var d={date:v('me-date'),category:v('me-cat'),description:v('me-desc'),amount:pf('me-amt')};if(!d.description||!d.amount){toast(T.fillRequired,'err');return;}DB.expenses.push(d);saveDB('expenses');appSh('Expenses',[d.date,d.category,d.description,d.amount,'']);toast(T.expSaved);closeModal('m-exp');clr(['me-desc']);document.getElementById('me-amt').value='';loadExpenses();loadDash();}
+
+// ── ORDERS / APPOINTMENTS ─────────────────────────────────────
+function loadOrders(){
+  var rows=DB.orders,pend=0,comp=0,bal=0;
+  rows.forEach(function(r){if(r.status==='Completed')comp++;else{pend++;bal+=parseFloat(r.balance)||0;}});
+  set('o-tot',rows.length);set('o-pend',pend);set('o-comp',comp);set('o-bal',$n(bal));
+  // For appointments page
+  var todayStr=today();
+  var todayAppts=rows.filter(function(r){return r.dueDate===todayStr;});
+  var upcoming=rows.filter(function(r){return r.dueDate>todayStr&&r.status!=='Completed';});
+  set('a-tot',rows.length);set('a-today',todayAppts.length);set('a-upcoming',upcoming.length);
+  // Today's appointments widget
+  var todayEl=document.getElementById('appt-today-list');
+  if(todayEl){if(!todayAppts.length){todayEl.innerHTML='<div class="empty">No appointments today</div>';}else{todayEl.innerHTML=todayAppts.map(function(r,i){return '<div class="appt-row"><div class="appt-time">'+(r.time||'All day')+'</div><div><div class="appt-name">'+r.customer+'</div><div class="appt-service">'+r.product+'</div></div><div style="margin-left:auto"><span class="badge '+(r.status==='Completed'?'b-success':'b-warning')+'">'+r.status+'</span></div></div>';}).join('');}}
+  var upEl=document.getElementById('appt-upcoming-list');
+  if(upEl){if(!upcoming.length){upEl.innerHTML='<div class="empty">No upcoming appointments</div>';}else{upEl.innerHTML=upcoming.slice(0,4).map(function(r){return '<div class="appt-row"><div class="appt-time">'+r.dueDate+'</div><div><div class="appt-name">'+r.customer+'</div><div class="appt-service">'+r.product+'</div></div><div style="margin-left:auto"><div class="list-amount">'+$d(r.balance)+'</div></div></div>';}).join('');}}
+  var tbody=document.getElementById('ord-tbody');if(!tbody)return;
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty">—</div></td></tr>';return;}
+  var sc={Completed:'b-success','In Progress':'b-primary',Pending:'b-warning'};
+  // Pet grooming has different columns
+  var isPet=activeNicho&&activeNicho.id==='petgrooming';
+  tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;var st=r.status||'Pending';
+    if(isPet){return '<tr><td class="td-muted">'+r.date+'</td><td class="td-name">'+r.customer+'</td><td class="td-muted">'+(r.owner||'')+'</td><td class="td-muted">'+r.product+'</td><td class="td-muted">'+(r.size||'')+'</td><td class="td-money">'+$d(r.price)+'</td><td><span class="badge '+(sc[st]||'b-gray')+'">'+st+'</span></td><td style="display:flex;gap:4px"><button class="ibtn ok" onclick="completeOrd('+ri+')">✓</button><button class="ibtn" onclick="del(\'orders\','+ri+')">✕</button></td></tr>';}
+    return '<tr><td class="td-muted">'+r.dueDate+'</td><td class="td-name">'+r.customer+'</td><td class="td-muted">'+r.product+'</td><td class="td-money">'+$d(r.price)+'</td><td class="td-muted">'+$d(r.deposit)+'</td><td class="td-neg td-money">'+$d(r.balance)+'</td><td><span class="badge '+(sc[st]||'b-gray')+'">'+st+'</span></td><td style="display:flex;gap:4px"><button class="ibtn ok" onclick="completeOrd('+ri+')">✓</button><button class="ibtn" onclick="del(\'orders\','+ri+')">✕</button></td></tr>';
+  }).join('');
+  var badge=document.getElementById('orders-badge')||document.getElementById('appt-badge');
+  if(badge){if(pend){badge.style.display='';badge.textContent=pend;}else{badge.style.display='none';}}
+}
+
+function saveOrder(){
+  var price=pf('mo-price'),dep=pf('mo-dep');
+  var d={customer:v('mo-cust'),product:v('mo-prod'),date:v('mo-date'),dueDate:v('mo-due'),price,deposit:dep,balance:(price-dep).toFixed(2),notes:v('mo-notes'),status:'Pending'};
+  if(activeNicho&&activeNicho.id==='petgrooming'){d.owner=v('mo-cust');d.customer=v('ms-prod')||v('mo-cust');}
+  if(!d.customer||!d.product){toast(T.fillRequired,'err');return;}
+  DB.orders.push(d);saveDB('orders');
+  var tab=activeNicho&&activeNicho.id==='bakery'?'Orders':'Appointments';
+  appSh(tab,[d.customer,d.product,d.date,d.dueDate,d.price,d.deposit,d.balance,d.notes,d.status]);
+  toast(T.apptSaved);closeModal('m-order');clr(['mo-cust','mo-prod','mo-price','mo-dep','mo-notes']);
+  loadOrders();loadDash();
+}
+function completeOrd(i){DB.orders[i].status='Completed';DB.orders[i].balance='0.00';saveDB('orders');toast(T.orderCompleted);loadOrders();loadDash();}
+
+// ── CLIENTS (Nail Studio) ─────────────────────────────────────
+function loadClients(){
+  var rows=DB.clients;
+  var reg=rows.filter(function(c){return (DB.sales.filter(function(s){return s.notes&&s.notes.indexOf(c.name)>-1;}).length)>=3||c.visits>=3;});
+  var avgRev=rows.length?(DB.sales.reduce(function(a,s){return a+(parseFloat(s.total)||0);},0)/rows.length):0;
+  set('cl-tot',rows.length);set('cl-reg',reg.length);set('cl-avg',$n(avgRev));
+  var el=document.getElementById('clients-list');if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty">No clients yet. Add your first client!</div>';return;}
+  el.innerHTML=rows.map(function(r,i){
+    var ini=(r.name||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+    return '<div class="client-card"><div class="client-av">'+ini+'</div><div style="flex:1"><div class="list-name">'+r.name+'</div><div class="list-sub">'+r.phone+(r.preferences?' · '+r.preferences:'')+'</div></div><div style="display:flex;gap:6px;align-items:center"><button class="ibtn" onclick="del(\'clients\','+i+')">✕</button></div></div>';
+  }).join('');
+}
+function saveClient(){var d={name:v('mc-name'),phone:v('mc-phone'),preferences:v('mc-notes'),referral:v('mc-ref'),date:today()};if(!d.name){toast(T.fillRequired,'err');return;}DB.clients.push(d);saveDB('clients');appSh('Clients',[d.name,d.phone,d.preferences,d.referral,d.date]);toast(T.clientSaved);closeModal('m-client');clr(['mc-name','mc-phone','mc-notes','mc-ref']);loadClients();}
+
+// ── PETS (Pet Grooming) ───────────────────────────────────────
+function loadPets(){
+  var rows=DB.pets;
+  var dogs=rows.filter(function(p){return p.species==='Dog';}).length;
+  var cats_=rows.filter(function(p){return p.species==='Cat';}).length;
+  set('pt-tot',rows.length);set('pt-dogs',dogs);set('pt-cats',cats_);
+  var el=document.getElementById('pets-list');if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty">No pets registered yet. Add your first client!</div>';return;}
+  var speciesIcon={Dog:'🐕',Cat:'🐈',Rabbit:'🐇',Other:'🐾'};
+  el.innerHTML=rows.map(function(r,i){
+    return '<div class="pet-card"><div class="pet-icon">'+(speciesIcon[r.species]||'🐾')+'</div><div style="flex:1"><div class="list-name">'+r.name+' <span style="font-size:12px;color:var(--text3)">('+r.species+')</span></div><div class="list-sub">Owner: '+r.owner+' · '+r.breed+' · '+r.size+'</div><div class="list-sub">📞 '+r.phone+(r.notes?' · '+r.notes:'')+'</div></div><button class="ibtn" onclick="del(\'pets\','+i+')">✕</button></div>';
+  }).join('');
+}
+function savePet(){var d={name:v('mp-petname'),owner:v('mp-owner'),species:v('mp-species'),breed:v('mp-breed'),size:v('mp-size'),phone:v('mp-phone'),notes:v('mp-notes'),date:today()};if(!d.name||!d.owner){toast(T.fillRequired,'err');return;}DB.pets.push(d);saveDB('pets');appSh('Pets',[d.name,d.owner,d.species,d.breed,d.size,d.phone,d.notes,d.date]);toast(T.petSaved);closeModal('m-pet');clr(['mp-petname','mp-owner','mp-breed','mp-phone','mp-notes']);loadPets();}
+
+// ── PRODUCTS (Bakery only) ────────────────────────────────────
+function calcM(){var ing=pf('c-ing'),pkg=pf('c-pkg'),hrs=pf('c-hrs'),rate=pf('c-rate'),price=pf('c-price');var labor=hrs*rate,cost=ing+pkg+labor,profit=price-cost,mg=price>0?(profit/price*100).toFixed(1):0;set('cr-ing','$'+ing.toFixed(2));set('cr-pkg','$'+pkg.toFixed(2));set('cr-lab','$'+labor.toFixed(2));set('cr-cost','$'+cost.toFixed(2));set('cr-prof','$'+profit.toFixed(2));set('cr-mg',mg+'%');var co=document.getElementById('calc-out');if(co)co.classList.toggle('show',price>0);}
+function clearCalc(){['c-name','c-ing','c-pkg','c-hrs','c-rate','c-price','c-units'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var co=document.getElementById('calc-out');if(co)co.classList.remove('show');}
+function saveProduct(){var name=v('c-name'),ing=pf('c-ing'),pkg=pf('c-pkg'),hrs=pf('c-hrs'),rate=pf('c-rate'),price=pf('c-price'),units=pf('c-units');if(!name){toast(T.fillRequired,'err');return;}var cost=ing+pkg+(hrs*rate),profit=price-cost,margin=price>0?(profit/price*100).toFixed(1):0;var d={name,ingredientCost:ing,packaging:pkg,laborHrs:hrs,rate,totalCost:cost.toFixed(2),salePrice:price,profit:profit.toFixed(2),margin:margin+'%',unitsPerMonth:units};DB.products.push(d);saveDB('products');appSh('Products',[d.name,ing,pkg,hrs,rate,d.totalCost,price,d.profit,d.margin,units]);toast(T.saleSaved);clearCalc();loadProducts();}
+function loadProducts(){var rows=DB.products;var tbody=document.getElementById('prod-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">—</div></td></tr>';renderMgChart([]);return;}tbody.innerHTML=rows.map(function(r,i){var mg=parseFloat(r.margin)||0;var mc=mg>=50?'td-pos':mg>=30?'td-money':'td-neg';return '<tr><td class="td-name">'+r.name+'</td><td class="td-muted">$'+parseFloat(r.totalCost).toFixed(2)+'</td><td class="td-money">$'+parseFloat(r.salePrice).toFixed(2)+'</td><td class="td-pos">$'+parseFloat(r.profit).toFixed(2)+'</td><td class="'+mc+'" style="font-size:15px;font-weight:700">'+r.margin+'</td><td class="td-muted">'+r.unitsPerMonth+'</td><td><button class="ibtn" onclick="del(\'products\','+i+')">✕</button></td></tr>';}).join('');renderMgChart(rows);}
+function renderMgChart(rows){var ctx=document.getElementById('ch-mg');if(!ctx)return;if(CH.mg)CH.mg.destroy();if(!rows.length)return;var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#6C63FF';CH.mg=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:rows.map(function(r){return r.name.split(' ').slice(0,2).join(' ');}),datasets:[{data:rows.map(function(r){return parseFloat(r.margin)||0;}),backgroundColor:rows.map(function(r){var m=parseFloat(r.margin)||0;return m>=50?'#22C55E88':m>=30?c+'88':'#EF444488';}),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:function(v){return v+'%';},font:{size:10}},max:100},y:{grid:{display:false},ticks:{font:{size:10}}}}}});}
+
+// ── INVENTORY ─────────────────────────────────────────────────
+function addInv(){var name=v('i-name'),stock=pf('i-stock'),min=pf('i-min'),cost=pf('i-cost');if(!name||!stock){toast(T.fillRequired,'err');return;}var d={name,category:v('i-cat'),unit:v('i-unit'),stock,min,cost,supplier:v('i-sup')};DB.inventory.push(d);saveDB('inventory');var tab=activeNicho&&activeNicho.id==='bakery'?'Inventory':'Supplies';appSh(tab,[d.name,d.category,d.unit,stock,min,cost,d.supplier]);toast(T.itemSaved);clr(['i-name','i-stock','i-min','i-cost','i-sup']);loadInventory();}
+function loadInventory(){var rows=DB.inventory,red=0,low=0,val=0;rows.forEach(function(r){var ss=parseFloat(r.stock)||0,m=parseFloat(r.min)||0,c=parseFloat(r.cost)||0;val+=ss*c;if(ss<=m)red++;else if(ss<=m*1.5)low++;});set('i-tot',rows.length);set('i-red',red);set('i-low',low);set('i-val',$n(val));var el=document.getElementById('inv-list');if(!el)return;if(!rows.length){el.innerHTML='<div class="empty">No items yet</div>';return;}el.innerHTML=rows.map(function(r,i){var ss=parseFloat(r.stock)||0,m=parseFloat(r.min)||0;var st,sc;if(ss<=m){st='🔴 Reorder';sc='b-danger';}else if(ss<=m*1.5){st='🟡 Low';sc='b-warning';}else{st='🟢 OK';sc='b-success';}return '<div class="list-row"><div style="flex:1"><div class="list-name">'+r.name+'</div><div class="list-sub">'+r.category+'</div></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:700">'+ss+' <span style="font-size:11px;color:var(--text3)">'+r.unit+'</span></span><span class="badge '+sc+'">'+st+'</span><button class="ibtn" onclick="del(\'inventory\','+i+')">✕</button></div></div>';}).join('');}
+
+// ── GOALS ────────────────────────────────────────────────────
+function addGoal(){var name=v('g-name'),target=pf('g-target'),current=pf('g-current');if(!name||!target){toast(T.fillRequired,'err');return;}var d={goal:name,target,current,deadline:v('g-dead'),priority:v('g-pri')};DB.goals.push(d);saveDB('goals');appSh('Goals',[d.goal,target,current,d.deadline,d.priority]);toast(T.goalSaved);clr(['g-name','g-target','g-current']);loadGoals();}
+function loadGoals(){var rows=DB.goals,on=0,beh=0,done=0;rows.forEach(function(r){var p=r.target>0?r.current/r.target:0;if(p>=1)done++;else if(p>=0.5)on++;else beh++;});set('g-tot',rows.length);set('g-on',on);set('g-beh',beh);set('g-done',done);var el=document.getElementById('goals-list');if(!el)return;if(!rows.length){el.innerHTML='<div class="empty">No goals set</div>';return;}el.innerHTML=rows.map(function(r,i){var pct=r.target>0?Math.min(r.current/r.target*100,100):0;var fc=pct>=75?'var(--success)':pct>=40?'var(--primary)':'var(--danger)';return '<div class="prog-row"><div class="prog-hdr"><span class="prog-label">'+r.goal+'</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:'+fc+'">'+Math.round(pct)+'%</span><button class="ibtn" onclick="del(\'goals\','+i+')">✕</button></div></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+fc+'"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px"><span>'+r.current.toLocaleString()+'</span><span>'+r.target.toLocaleString()+'</span></div></div>';}).join('');}
+
+// ── THEME ─────────────────────────────────────────────────────
+function setVar(prop,val){document.documentElement.style.setProperty(prop,val);saveTheme();}
+function updatePS(hex){document.documentElement.style.setProperty('--primary-l',hexAlpha(hex,.12));document.documentElement.style.setProperty('--primary-d',darken(hex));saveTheme();}
+function setFont(val){document.documentElement.style.setProperty('--font',val);saveTheme();}
+function resetColors(){var d={'--primary':'#6C63FF','--success':'#22C55E','--danger':'#EF4444','--bg':'#F4F6FB','--card':'#FFFFFF','--sidebar':'#FFFFFF','--text':'#111827','--text2':'#6B7280','--warning':'#F59E0B'};Object.keys(d).forEach(function(k){document.documentElement.style.setProperty(k,d[k]);});updatePS('#6C63FF');DB.theme={};saveDB('theme');toast(T.saved);}
+function saveTheme(){var props=['--primary','--success','--danger','--bg','--card','--sidebar','--text','--text2','--warning','--font','--font-size'];var t={};props.forEach(function(k){t[k]=getComputedStyle(document.documentElement).getPropertyValue(k).trim();});DB.theme=t;saveDB('theme');}
+function applyTheme(){var t=DB.theme||{};Object.keys(t).forEach(function(k){document.documentElement.style.setProperty(k,t[k]);});}
+function toggleWidget(id,show){var el=document.getElementById(id);if(el)el.style.display=show?'':'none';DB.widgets[id]=show;saveDB('widgets');}
+function applyWidgets(){Object.keys(DB.widgets).forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=DB.widgets[id]?'':'none';});}
+function saveSettings(){DB.settings.name=v('set-name')||'';saveDB('settings');updateBizName(DB.settings.name);toast(T.saved);}
+function updateBizName(name){if(!name)return;tt('sb-biz-name',name);tt('drawer-biz-name',name);}
+
+// ── MISC ─────────────────────────────────────────────────────
+function del(key,i){if(!confirm(T.confirmDel))return;DB[key].splice(i,1);saveDB(key);toast(T.deleted);var p=document.querySelector('.nav-item.active');if(p){var m=p.getAttribute('onclick').match(/'(\w+)'/);if(m)go(m[1]);}}
+function exportCSV(){var csv='SALES\nDate,Category,Service,Qty,Total,Payment\n';DB.sales.forEach(function(r){csv+=[r.date,r.category,r.product,r.qty,r.total,r.payment].join(',')+'\n';});csv+='\nEXPENSES\nDate,Category,Description,Amount\n';DB.expenses.forEach(function(r){csv+=[r.date,r.category,r.description,r.amount].join(',')+'\n';});var blob=new Blob([csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='business-data.csv';a.click();toast(T.exported);}
+
+function loadSample(){
+  var ago=function(d){var dt=new Date();dt.setDate(dt.getDate()-d);return dt.toISOString().split('T')[0];};
+  var fut=function(d){var dt=new Date();dt.setDate(dt.getDate()+d);return dt.toISOString().split('T')[0];};
+  var n=activeNicho;
+  if(n.id==='bakery'){
+    DB.sales=[{date:ago(1),category:'Custom Cakes',product:'Birthday Cake 6"',qty:1,price:65,total:'65.00',payment:'Card',notes:''},{date:ago(3),category:'Cupcakes',product:'Red Velvet x12',qty:1,price:36,total:'36.00',payment:'Cash',notes:''},{date:ago(5),category:'Wedding Cakes',product:'Wedding Cake 3 tiers',qty:1,price:350,total:'350.00',payment:'Transfer',notes:''},{date:ago(8),category:'Cookies',product:'Decorated Cookies x24',qty:2,price:30,total:'60.00',payment:'Card',notes:''}];
+    DB.orders=[{customer:'Maria García',product:'Birthday Cake',date:ago(3),dueDate:fut(7),price:65,deposit:32.50,balance:'32.50',notes:'Fondant flowers',status:'Pending'},{customer:'Laura Martínez',product:'Wedding Cake 3 tiers',date:ago(5),dueDate:fut(14),price:350,deposit:175,balance:'175.00',notes:'Blush & ivory',status:'Pending'}];
+    DB.inventory=[{name:'All-Purpose Flour',category:'Dry Goods',unit:'kg',stock:25,min:5,cost:0.80,supplier:'Local Mill'},{name:'Unsalted Butter',category:'Dairy',unit:'kg',stock:4,min:4,cost:6.50,supplier:'Dairy Direct'},{name:'Cake Boxes 8"',category:'Packaging',unit:'pack',stock:4,min:10,cost:0.45,supplier:'Pack Direct'}];
+  } else if(n.id==='nails'){
+    DB.sales=[{date:ago(1),category:'Gel Nails',product:'Full set gel - nude pink',qty:1,price:55,total:'55.00',payment:'Card',notes:''},{date:ago(2),category:'Manicure',product:'Regular manicure + nail art',qty:1,price:35,total:'35.00',payment:'Cash',notes:''},{date:ago(3),category:'Pedicure',product:'Spa pedicure',qty:1,price:45,total:'45.00',payment:'Card',notes:''},{date:ago(5),category:'Nail Art',product:'Custom nail art 3D',qty:1,price:80,total:'80.00',payment:'Transfer',notes:''}];
+    DB.orders=[{customer:'Sofia Rodríguez',product:'Full gel set',date:ago(2),dueDate:fut(3),price:55,deposit:0,balance:'55.00',notes:'Nude pink with glitter tips',status:'Pending'},{customer:'Ana López',product:'Pedicure + nail art',date:ago(1),dueDate:fut(5),price:70,deposit:0,balance:'70.00',notes:'Summer flowers design',status:'Pending'}];
+    DB.clients=[{name:'Sofia Rodríguez',phone:'+1 555-0101',preferences:'Gel nails, nude tones, no acrylics',referral:'Instagram',date:ago(30)},{name:'Ana López',phone:'+1 555-0102',preferences:'Bold colors, nail art lover',referral:'Friend referral',date:ago(60)},{name:'María García',phone:'+1 555-0103',preferences:'French manicure always',referral:'Walk-in',date:ago(14)}];
+    DB.inventory=[{name:'Gel Base Coat',category:'Supplies',unit:'bottle',stock:3,min:2,cost:8.50,supplier:'Nail Supplier Co'},{name:'UV Gel - Nude Pink',category:'Supplies',unit:'bottle',stock:2,min:3,cost:12.00,supplier:'Nail Supplier Co'},{name:'Nail Forms',category:'Supplies',unit:'pack',stock:1,min:2,cost:5.00,supplier:'Beauty Wholesale'},{name:'Lint-free Wipes',category:'Supplies',unit:'pack',stock:4,min:3,cost:3.50,supplier:'Beauty Wholesale'}];
+  } else if(n.id==='petgrooming'){
+    DB.sales=[{date:ago(1),category:'Full Groom',product:'Full groom - Golden Retriever',qty:1,price:75,total:'75.00',payment:'Card',notes:''},{date:ago(2),category:'Bath & Dry',product:'Bath & dry - Poodle',qty:1,price:45,total:'45.00',payment:'Cash',notes:''},{date:ago(4),category:'Full Groom',product:'Full groom - German Shepherd',qty:1,price:85,total:'85.00',payment:'Card',notes:''},{date:ago(6),category:'Nail Trim',product:'Nail trim - Cat',qty:1,price:20,total:'20.00',payment:'Cash',notes:''}];
+    DB.orders=[{customer:'Buddy',product:'Full groom',date:ago(1),dueDate:fut(3),price:75,deposit:0,balance:'75.00',notes:'Owner: John Smith · Golden Retriever · Large',status:'Pending'},{customer:'Luna',product:'Bath & dry',date:ago(2),dueDate:fut(5),price:45,deposit:0,balance:'45.00',notes:'Owner: María García · Poodle · Medium',status:'Pending'}];
+    DB.pets=[{name:'Buddy',owner:'John Smith',species:'Dog',breed:'Golden Retriever',size:'Large',phone:'+1 555-0201',notes:'Loves treats, gentle with grooming',date:ago(90)},{name:'Luna',owner:'María García',species:'Dog',breed:'Poodle',size:'Medium',phone:'+1 555-0202',notes:'Anxious, needs calm handling',date:ago(60)},{name:'Whiskers',owner:'Tom Chen',species:'Cat',breed:'Maine Coon',size:'Large',phone:'+1 555-0203',notes:'Only allows nail trims',date:ago(30)}];
+    DB.inventory=[{name:'Grooming Shampoo',category:'Supplies',unit:'bottle',stock:3,min:2,cost:15.00,supplier:'Pet Supply Co'},{name:'Conditioner',category:'Supplies',unit:'bottle',stock:2,min:2,cost:12.00,supplier:'Pet Supply Co'},{name:'Grooming Scissors',category:'Equipment',unit:'unit',stock:2,min:1,cost:45.00,supplier:'Pro Grooming Tools'},{name:'Nail Clippers',category:'Equipment',unit:'unit',stock:3,min:2,cost:18.00,supplier:'Pro Grooming Tools'}];
+  }
+  DB.expenses=[{date:ago(3),category:n.expCats[0],description:'Monthly supplies order',amount:120},{date:ago(8),category:'Rent',description:'Monthly rent',amount:400},{date:ago(12),category:'Marketing',description:'Social media ads',amount:50}];
+  DB.goals=[{goal:'Monthly Revenue',target:3000,current:1200,deadline:new Date().getFullYear()+'-12-31',priority:'High'},{goal:'New Clients This Month',target:10,current:4,deadline:new Date().getFullYear()+'-12-31',priority:'Medium'}];
+  ['sales','expenses','orders','clients','pets','inventory','goals'].forEach(function(k){saveDB(k);});
+  // reload DB
+  DB.sales=loadDB('sales');DB.expenses=loadDB('expenses');DB.orders=loadDB('orders');
+  DB.inventory=loadDB('inventory');DB.goals=loadDB('goals');DB.clients=loadDB('clients');DB.pets=loadDB('pets');
+  toast(T.sampleLoaded);loadDash();
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  applyLangUI();
+  document.querySelectorAll('input[type="date"]').forEach(function(el){el.value=today();});
+  var u=localStorage.getItem('bm_user');
+  if(u&&accessToken){
+    try{
+      currentUser=JSON.parse(u);
+      showScreen('screen-loading');
+      // Safety net — if stuck on loading for 8 seconds, go to login
+      var safetyTimer=setTimeout(function(){
+        if(document.getElementById('screen-loading').classList.contains('active')){
+          showScreen('screen-login');
+        }
+      },8000);
+      checkExistingNicho(currentUser.email).then(function(){
+        clearTimeout(safetyTimer);
+      }).catch(function(){
+        clearTimeout(safetyTimer);
+        showScreen('screen-login');
+      });
+    }
+    catch(e){showScreen('screen-login');}
+  } else {
+    showScreen('screen-login');
+  }
+});
+</script>
+</body>
+</html>
