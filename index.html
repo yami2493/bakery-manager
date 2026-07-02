@@ -1,0 +1,2408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bakery Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* ── PALETTE ── */
+  --primary:#D97706;--primary-l:#FEF3E2;--primary-d:#B45309;
+  --bg:#F0EDE8;--card:#FAFAF8;--sidebar:#FAFAF8;
+  --text:#1A1814;--text2:#6B6660;--text3:#B0ACA8;--border:#E8E4DF;
+  --success:#2D8A4E;--success-l:#EBF5EF;
+  --danger:#C0392B;--danger-l:#FCECEA;
+  --warning:#D97706;--warning-l:#FEF3E2;
+  --shadow:0 2px 8px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.03);
+  --shadow-md:0 8px 32px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.04);
+  --shadow-lg:0 24px 64px rgba(0,0,0,.12);
+  /* ── SHAPE ── */
+  --r:20px;--r-sm:14px;--r-xs:10px;
+  /* ── TYPE ── */
+  --font:'Inter',sans-serif;--font-size:14px;
+}
+html,body{height:100%;font-family:var(--font);font-size:var(--font-size);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+
+/* ── SCREENS ── */
+.screen{display:none;position:fixed;inset:0;z-index:100;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;padding:20px}
+.screen.active{display:flex}
+
+/* ── LOGIN ── */
+.login-box{background:var(--card);border-radius:28px;padding:48px 40px;width:420px;max-width:100%;text-align:center;box-shadow:var(--shadow-lg);border:1px solid var(--border)}
+.login-logo{width:68px;height:68px;border-radius:22px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 24px;box-shadow:0 8px 24px rgba(217,119,6,.3)}
+.login-title{font-size:26px;font-weight:800;color:var(--text);margin-bottom:8px;letter-spacing:-.03em}
+.login-sub{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:28px}
+.lang-bar{display:flex;justify-content:center;gap:8px;margin-bottom:24px}
+.lang-btn{padding:6px 16px;border-radius:40px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--card);color:var(--text3);font-family:var(--font);transition:all .15s}
+.lang-btn.active{border-color:var(--primary);background:var(--primary-l);color:var(--primary)}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border:1.5px solid var(--border);border-radius:40px;background:var(--card);font-family:var(--font);font-size:14px;font-weight:700;color:var(--text);cursor:pointer;margin-bottom:14px;transition:all .15s;letter-spacing:-.01em}
+.btn-google:hover{background:var(--bg);border-color:var(--text3)}
+.btn-google svg{width:20px;height:20px;flex-shrink:0}
+.login-note{font-size:11px;color:var(--text3);line-height:1.7}
+.login-feats{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;text-align:left}
+.login-feat{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text2)}
+.login-feat-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;background:var(--bg)}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:14px;color:var(--text2);font-weight:600}
+
+/* ── APP SHELL ── */
+.app{display:none;height:100vh;overflow:hidden;background:var(--bg);gap:0}
+.app.active{display:flex}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;border-right:1px solid var(--border);overflow:hidden;transition:width .22s cubic-bezier(.4,0,.2,1)}
+.sidebar.collapsed{width:68px}
+.sb-top{padding:20px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);min-height:68px;overflow:visible}
+.sb-logo{width:38px;height:38px;border-radius:13px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 4px 12px rgba(217,119,6,.25)}
+.sb-brand{overflow:hidden;flex:1;transition:opacity .18s,width .18s}
+.sidebar.collapsed .sb-brand{opacity:0;width:0;flex:0;pointer-events:none}
+.sb-biz{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
+.sb-sub{font-size:10px;color:var(--text3);font-weight:500}
+.sb-toggle{background:none;border:none;cursor:pointer;color:var(--text3);padding:6px;border-radius:10px;display:flex;flex-shrink:0;font-size:14px;z-index:10;transition:all .15s}
+.sb-toggle:hover{background:var(--bg);color:var(--text)}
+.sidebar.collapsed .sb-toggle{background:var(--primary-l);color:var(--primary);border-radius:12px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;margin:0 auto}
+.sidebar.collapsed .sb-top{flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px 8px}
+.nav{padding:10px 10px;flex:1;overflow-y:auto;overflow-x:hidden}
+.nav-sec{font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:12px 8px 5px;white-space:nowrap;transition:opacity .18s}
+.sidebar.collapsed .nav-sec{opacity:0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .14s;margin-bottom:2px;position:relative;white-space:nowrap}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.active{background:var(--primary-l);color:var(--primary);font-weight:700}
+.nav-ic{width:22px;text-align:center;flex-shrink:0;font-size:17px}
+.nav-lbl{transition:opacity .18s,width .18s;flex:1}
+.sidebar.collapsed .nav-lbl{opacity:0;width:0;flex:0}
+.nav-badge{background:var(--danger);color:white;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;flex-shrink:0}
+.sidebar.collapsed .nav-badge{display:none}
+.nav-tip{display:none;position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);background:var(--text);color:white;font-size:11px;font-weight:600;padding:6px 12px;border-radius:10px;white-space:nowrap;z-index:999;pointer-events:none;box-shadow:var(--shadow-md)}
+.sidebar.collapsed .nav-item:hover .nav-tip{display:block}
+.sb-footer{padding:12px 10px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;transition:background .14s}
+.user-row:hover{background:var(--bg)}
+.user-pic{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.user-ph{width:32px;height:32px;border-radius:50%;background:var(--primary-l);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--primary);flex-shrink:0}
+.user-info{overflow:hidden;transition:opacity .18s;flex:1;min-width:0}
+.sidebar.collapsed .user-info{opacity:0;width:0;flex:0}
+.user-nm{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-rl{font-size:10px;color:var(--text3);font-weight:500}
+.sync-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;padding:4px 10px;border-radius:20px;margin:4px 10px 0;font-weight:600}
+.sync-pill.synced{background:var(--success-l);color:var(--success)}
+.sync-pill.syncing{background:var(--warning-l);color:var(--warning)}
+.sync-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.sidebar.collapsed .sync-pill{opacity:0}
+
+/* ── MAIN AREA ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.topbar{height:68px;background:rgba(250,250,248,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:14px;flex-shrink:0;position:sticky;top:0;z-index:10}
+.tb-left{flex:1;min-width:0}
+.tb-title{font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.03em;white-space:nowrap}
+.tb-sub{font-size:12px;color:var(--text3);margin-top:1px;font-weight:500}
+.tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.btn-add{display:flex;align-items:center;gap:6px;background:var(--primary);color:white;border:none;border-radius:40px;padding:10px 20px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;letter-spacing:-.01em;box-shadow:0 4px 12px rgba(217,119,6,.3);transition:all .15s}
+.btn-add:hover{background:var(--primary-d);transform:translateY(-1px);box-shadow:0 6px 16px rgba(217,119,6,.35)}
+.btn-icon{width:38px;height:38px;border-radius:50%;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--text2);transition:all .14s}
+.btn-icon:hover{background:var(--border)}
+.mobile-topbar{display:none;height:60px;background:var(--card);border-bottom:1px solid var(--border);align-items:center;padding:0 18px;gap:12px}
+.hbg{background:none;border:none;cursor:pointer;padding:8px;border-radius:12px;display:flex;color:var(--text2);font-size:20px}
+.mob-title{font-size:17px;font-weight:800;color:var(--text);flex:1;letter-spacing:-.02em}
+.drawer{display:none;position:fixed;inset:0;z-index:300}
+.drawer-ov{position:absolute;inset:0;background:rgba(26,24,20,.5);backdrop-filter:blur(4px)}
+.drawer-ct{position:absolute;top:0;left:0;bottom:0;width:260px;background:var(--sidebar);display:flex;flex-direction:column;box-shadow:var(--shadow-lg);animation:slideIn .22s cubic-bezier(.4,0,.2,1)}
+@keyframes slideIn{from{transform:translateX(-100%)}to{transform:translateX(0)}}
+.scroll{flex:1;overflow-y:auto;padding:24px 28px 48px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;gap:14px;margin-bottom:20px}
+.kpi-4{grid-template-columns:repeat(4,1fr)}
+.kpi-3{grid-template-columns:repeat(3,1fr)}
+.kpi-card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);transition:all .18s;border:1px solid var(--border)}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kpi-card.accent{background:var(--primary);cursor:pointer;border-color:transparent;box-shadow:0 8px 24px rgba(217,119,6,.25)}
+.kpi-card.accent .kpi-label,.kpi-card.accent .kpi-sub{color:rgba(255,255,255,.7)}
+.kpi-card.accent .kpi-value{color:white}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.kpi-icon{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.kpi-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+.kpi-value{font-size:28px;font-weight:800;color:var(--text);letter-spacing:-.03em;line-height:1}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:5px;font-weight:500}
+
+/* ── LAYOUT HELPERS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g65{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:16px}
+.g56{display:grid;grid-template-columns:1fr 1.7fr;gap:16px;margin-bottom:16px}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-dark{background:var(--text);border-radius:var(--r);padding:22px;box-shadow:var(--shadow);border:1px solid transparent}
+.card-dark .card-title{color:white}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.card-title{font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.card-tag{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--bg);color:var(--text3);padding:5px 12px;border-radius:20px}
+.card-link{font-size:12px;font-weight:700;color:var(--primary);cursor:pointer}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text3);padding:8px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--bg)}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:12px 14px;vertical-align:middle}
+.td-name{font-weight:700;font-size:13px}
+.td-muted{color:var(--text3);font-size:12px;font-weight:500}
+.td-money{font-weight:800;font-size:14px}
+.td-pos{color:var(--success)}
+.td-neg{color:var(--danger)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:-.01em}
+.b-primary{background:var(--primary-l);color:var(--primary)}
+.b-success{background:var(--success-l);color:var(--success)}
+.b-danger{background:var(--danger-l);color:var(--danger)}
+.b-warning{background:var(--warning-l);color:var(--warning)}
+.b-gray{background:var(--bg);color:var(--text2)}
+
+/* ── LIST ROWS ── */
+.list-row{display:flex;align-items:center;gap:13px;padding:12px 0;border-bottom:1px solid var(--border)}
+.list-row:last-child{border-bottom:none}
+.list-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
+.list-name{font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.list-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:1px}
+.list-r{margin-left:auto;text-align:right}
+.list-amount{font-size:14px;font-weight:800;color:var(--text);letter-spacing:-.02em}
+.list-status{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── PROGRESS BARS ── */
+.prog-row{margin-bottom:16px}
+.prog-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.prog-label{font-size:13px;font-weight:700;color:var(--text)}
+.prog-pct{font-size:13px;font-weight:800;color:var(--primary)}
+.prog-bar{height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;background:var(--primary);transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,24,20,.45);z-index:400;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--card);border-radius:24px;padding:32px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:mIn .22s cubic-bezier(.34,1.3,.64,1);border:1px solid var(--border)}
+@keyframes mIn{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.modal-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.03em}
+.modal-x{background:var(--bg);border:1px solid var(--border);width:32px;height:32px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);transition:all .14s}
+.modal-x:hover{background:var(--border)}
+
+/* ── FORM ELEMENTS ── */
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fl{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text3)}
+.fi{padding:11px 16px;border:1.5px solid var(--border);border-radius:var(--r-xs);font-family:var(--font);font-size:13px;font-weight:500;color:var(--text);background:var(--bg);outline:none;width:100%;transition:all .15s;-webkit-appearance:none;letter-spacing:-.01em}
+.fi:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(217,119,6,.1);background:white}
+select.fi{cursor:pointer}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+.f-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.btn-cancel{background:var(--bg);border:1.5px solid var(--border);padding:10px 20px;border-radius:40px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .14s;letter-spacing:-.01em}
+.btn-cancel:hover{background:var(--border)}
+.btn-save{background:var(--primary);border:none;padding:10px 24px;border-radius:40px;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;color:white;letter-spacing:-.01em;box-shadow:0 4px 12px rgba(217,119,6,.25);transition:all .15s}
+.btn-save:hover{background:var(--primary-d);transform:translateY(-1px)}
+
+/* ── SETTINGS ── */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.setting-row:last-child{border-bottom:none}
+.setting-label{font-size:13px;color:var(--text);font-weight:500}
+.clr-input{width:38px;height:30px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;padding:2px;background:none}
+.sz-input{width:68px;padding:7px 10px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;color:var(--text);background:var(--bg);text-align:center;outline:none}
+.font-sel{padding:9px 12px;border:1.5px solid var(--border);border-radius:10px;font-size:13px;color:var(--text);background:var(--bg);outline:none;cursor:pointer;width:100%;font-family:var(--font);font-weight:500}
+.toggle{position:relative;width:42px;height:24px;cursor:pointer;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:12px;transition:.25s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.25s;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.toggle input:checked+.toggle-slider{background:var(--primary)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(18px)}
+.widget-item{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border);margin-bottom:8px}
+.widget-name{font-size:13px;font-weight:700;color:var(--text)}
+.widget-desc{font-size:11px;color:var(--text3);margin-top:2px;font-weight:400}
+
+/* ── CHARTS ── */
+.chart-wrap{position:relative;height:180px}
+
+/* ── CALCULATOR ── */
+.calc-out{background:var(--bg);border-radius:var(--r-sm);padding:18px;margin-top:14px;display:none;border:1px solid var(--border)}
+.calc-out.show{display:block}
+.calc-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--text2);font-weight:500}
+.calc-total{display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:var(--text);padding-top:12px;margin-top:8px;border-top:1px solid var(--border);letter-spacing:-.02em}
+.calc-profit{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--success);padding-top:6px}
+.calc-margin{display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:var(--primary);padding-top:4px}
+
+/* ── STOCK CARD ── */
+.stock-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.stock-row:last-child{border-bottom:none}
+
+/* ── CLIENTS ── */
+.client-card{background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border:1px solid var(--border)}
+.client-av{width:44px;height:44px;border-radius:50%;background:var(--primary-l);color:var(--primary);font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── WELCOME BANNER ── */
+.welcome-banner{border-radius:var(--r);padding:24px 28px;margin-bottom:20px;color:white;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-d) 100%);box-shadow:0 8px 24px rgba(217,119,6,.25)}
+.welcome-text{font-size:20px;font-weight:800;margin-bottom:5px;letter-spacing:-.03em}
+.welcome-sub{font-size:13px;opacity:.8;font-weight:500}
+
+/* ── CALENDAR ── */
+.cal-toolbar{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.cal-view-switch{display:flex;background:var(--bg);border-radius:12px;padding:3px;gap:2px;border:1px solid var(--border)}
+.cal-view-btn{background:none;border:none;padding:7px 16px;border-radius:10px;font-family:var(--font);font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;letter-spacing:-.01em}
+.cal-view-btn.active{background:var(--card);color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.cal-view-btn:hover:not(.active){color:var(--text)}
+.cal-month-grid{padding:14px 18px 18px}
+.cal-month-headers{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px}
+.cal-month-dh{text-align:center;font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;padding:6px 0;letter-spacing:.08em}
+.cal-month-body{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-month-cell{min-height:92px;border-radius:var(--r-sm);background:var(--bg);padding:7px;cursor:pointer;transition:all .15s;overflow:hidden;border:1px solid transparent}
+.cal-month-cell:hover{background:var(--border);border-color:var(--border)}
+.cal-month-cell.other-month{opacity:.3;cursor:default}
+.cal-month-cell.other-month:hover{background:var(--bg)}
+.cal-day-num{font-size:12px;font-weight:700;color:var(--text);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:4px}
+.cal-day-num.today{background:var(--primary);color:white}
+.cal-month-events{display:flex;flex-direction:column;gap:2px}
+.cal-mini-event{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em}
+.cal-mini-more{font-size:9px;color:var(--text3);font-weight:700;padding:1px 6px}
+.cal-week-grid{display:flex;flex-direction:column;max-height:640px}
+.cal-week-headers{display:grid;grid-template-columns:60px repeat(var(--cal-days,7),1fr);border-bottom:1px solid var(--border);flex-shrink:0}
+.cal-week-gutter{border-right:1px solid var(--border)}
+.cal-week-dh{text-align:center;padding:12px 4px;border-right:1px solid var(--border)}
+.cal-week-dh.today{background:var(--primary-l)}
+.cal-week-dh-name{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.07em}
+.cal-week-dh-num{font-size:18px;font-weight:800;color:var(--text);margin-top:2px;letter-spacing:-.03em}
+.cal-week-dh-num.today-num{color:var(--primary)}
+.cal-week-allday{display:grid;grid-template-columns:60px repeat(var(--cal-days,7),1fr);border-bottom:1px solid var(--border);min-height:32px;flex-shrink:0}
+.cal-week-allday-cell{border-right:1px solid var(--border);padding:3px;display:flex;flex-direction:column;gap:2px}
+.cal-week-scroll{overflow-y:auto;max-height:560px}
+.cal-week-timegrid{display:grid;grid-template-columns:60px repeat(var(--cal-days,7),1fr);position:relative}
+.cal-timecol{display:flex;flex-direction:column}
+.cal-hour-lbl{height:60px;font-size:10px;font-weight:600;color:var(--text3);text-align:right;padding:2px 8px 0 0;border-right:1px solid var(--border);flex-shrink:0;box-sizing:border-box}
+.cal-day-col{position:relative;border-right:1px solid var(--border);cursor:pointer}
+.cal-hour-line{height:60px;border-bottom:1px solid var(--border);box-sizing:border-box;pointer-events:none}
+.cal-evt-block{position:absolute;left:2px;right:2px;border-radius:8px;padding:4px 7px;cursor:pointer;overflow:hidden;z-index:2;transition:filter .12s}
+.cal-evt-block:hover{filter:brightness(.92)}
+.cal-day-view{display:flex;flex-direction:column}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--text);color:white;padding:13px 22px;border-radius:40px;font-size:13px;font-weight:700;z-index:999;transform:translateY(60px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);box-shadow:var(--shadow-md);letter-spacing:-.01em}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── MISC ── */
+.empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;font-weight:500}
+.ibtn{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text3);font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;font-family:var(--font);transition:all .14s}
+.ibtn:hover{background:var(--danger-l);color:var(--danger);border-color:var(--danger-l)}
+.ibtn.ok:hover{background:var(--success-l);color:var(--success);border-color:var(--success-l)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none!important}.topbar{display:none}
+  .mobile-topbar{display:flex}
+  .app.active{flex-direction:column}
+  .scroll{padding:14px 16px 80px}
+  .kpi-4,.kpi-3{grid-template-columns:1fr 1fr}
+  .g2,.g65,.g56{grid-template-columns:1fr}
+  .settings-grid{grid-template-columns:1fr 1fr}
+  .modal{padding:22px 18px;max-height:85vh}
+  .cal-toolbar{flex-direction:column;gap:10px;padding:14px 16px}
+  .cal-view-switch{align-self:stretch;justify-content:center}
+  .cal-week-headers{grid-template-columns:40px repeat(3,1fr)}
+  .cal-week-timegrid{grid-template-columns:40px repeat(3,1fr)}
+  .cal-week-allday{grid-template-columns:40px repeat(3,1fr)}
+  .cal-timecol{width:40px}
+  .cal-hour-lbl{font-size:8px;padding:1px 4px 0 0}
+  .cal-week-dh{padding:8px 2px}
+  .cal-week-dh-name{font-size:8px}
+  .cal-week-dh-num{font-size:14px}
+  .cal-week-scroll{max-height:380px}
+  .cal-month-cell{min-height:52px}
+  .cal-mini-event{font-size:9px;padding:1px 4px}
+  .r2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-4,.kpi-3{grid-template-columns:1fr 1fr}
+  .settings-grid{grid-template-columns:1fr}
+  .login-box{padding:32px 20px}
+  .scroll{padding:12px 14px 80px}
+  .kpi-value{font-size:24px}
+  .tb-title{font-size:18px}
+}
+
+
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="screen active" id="screen-login" style="background:var(--bg)">
+  <div class="login-box">
+    <div class="login-logo">🧁</div>
+    <div class="login-title">Bakery Manager</div>
+    <div class="login-sub" id="login-sub">Your bakery business management system, connected to your own Google Sheets.</div>
+    <div class="lang-bar">
+      <button class="lang-btn active" onclick="setLang('en')">🇺🇸 EN</button>
+      <button class="lang-btn" onclick="setLang('es')">🇪🇸 ES</button>
+      <button class="lang-btn" onclick="setLang('pt')">🇧🇷 PT</button>
+    </div>
+    <div class="login-feats">
+      <div class="login-feat"><div class="login-feat-icon" style="background:#F0FDF4">📊</div><span id="feat1">Your data in <strong>your</strong> Google Sheets — private</span></div>
+      <div class="login-feat"><div class="login-feat-icon" style="background:#FEF3E2">🔒</div><span id="feat2">Only you can access your data</span></div>
+      <div class="login-feat"><div class="login-feat-icon" style="background:#FFFBEB">📱</div><span id="feat3">Works on phone and computer</span></div>
+    </div>
+    <button class="btn-google" onclick="signIn()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      <span id="btn-google-txt">Continue with Google</span>
+    </button>
+    <div class="login-note" id="login-note">By connecting, the app creates a Google Sheet in your Drive to store your data.</div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="screen-loading">
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loading-txt">Loading...</div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="sb-logo">🧁</div>
+      <div class="sb-brand">
+        <div class="sb-biz" id="sb-biz-name">Bakery Manager</div>
+        <div class="sb-sub">Dashboard</div>
+      </div>
+      <button class="sb-toggle" onclick="toggleSidebar()" id="sb-toggle-btn">◀</button>
+    </div>
+    <nav class="nav" id="sidebar-nav"></nav>
+    <div class="sb-footer">
+      <div class="user-row" onclick="signOut()">
+        <img id="user-pic" class="user-pic" src="" style="display:none">
+        <div id="user-ph" class="user-ph">?</div>
+        <div class="user-info">
+          <div class="user-nm" id="user-name">...</div>
+          <div class="user-rl" id="txt-signout">Sign out</div>
+        </div>
+      </div>
+      <div class="sync-pill synced" id="sync-pill">
+        <div class="sync-dot"></div>
+        <span id="sync-text">Synced</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="mobile-topbar">
+    <button class="hbg" onclick="openDrawer()">☰</button>
+    <div class="mob-title" id="mobile-title">Dashboard</div>
+    <button class="btn-add" id="mobile-cta" onclick="openCTA()" style="padding:7px 14px;font-size:12px">+</button>
+  </div>
+
+  <div class="drawer" id="drawer" style="display:none">
+    <div class="drawer-ov" onclick="closeDrawer()"></div>
+    <div class="drawer-ct">
+      <div class="sb-top" style="padding:20px 16px">
+        <div class="sb-logo">🧁</div>
+        <div class="sb-brand" style="opacity:1;width:auto;flex:1">
+          <div class="sb-biz" id="drawer-biz-name">Bakery Manager</div>
+        </div>
+        <button style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text3)" onclick="closeDrawer()">✕</button>
+      </div>
+      <nav class="nav" id="drawer-nav" style="flex:1"></nav>
+      <div class="sb-footer">
+        <div class="user-row" onclick="signOut()">
+          <img id="drawer-user-pic" class="user-pic" src="" style="display:none">
+          <div class="user-ph" id="drawer-user-ph">?</div>
+          <div class="user-info" style="opacity:1;width:auto;flex:1">
+            <div class="user-nm" id="drawer-user-name">...</div>
+            <div class="user-rl" id="drawer-signout">Sign out</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <div class="tb-title" id="ptitle">Dashboard</div>
+        <div class="tb-sub" id="psub"></div>
+      </div>
+      <div class="tb-right">
+        <button class="btn-add" id="cta-btn" onclick="openCTA()">+ <span id="cta-txt">Add New</span></button>
+      </div>
+    </header>
+    <div class="scroll" id="app-scroll"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="m-sale"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">New Sale</div><button class="modal-x" onclick="closeModal('m-sale')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Date</label><input class="fi" id="ms-date" type="date"></div><div class="fg"><label class="fl">Category</label><select class="fi" id="ms-cat"></select></div></div>
+  <div class="fg"><label class="fl">Product</label><input class="fi" id="ms-prod" placeholder="e.g. Birthday Cake 6 inch"></div>
+  <div class="r2"><div class="fg"><label class="fl">Qty</label><input class="fi" id="ms-qty" type="number" value="1"></div><div class="fg"><label class="fl">Price ($)</label><input class="fi" id="ms-price" type="number" placeholder="0.00"></div></div>
+  <div class="fg"><label class="fl">Payment</label><select class="fi" id="ms-pay"></select></div>
+  <div class="fg"><label class="fl">Notes</label><input class="fi" id="ms-notes" placeholder="Optional"></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-sale')">Cancel</button><button class="btn-save" onclick="saveSale()">Save</button></div>
+</div></div>
+
+<div class="modal-overlay" id="m-exp"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">New Expense</div><button class="modal-x" onclick="closeModal('m-exp')">✕</button></div>
+  <div class="r2"><div class="fg"><label class="fl">Date</label><input class="fi" id="me-date" type="date"></div><div class="fg"><label class="fl">Category</label><select class="fi" id="me-cat"></select></div></div>
+  <div class="fg"><label class="fl">Description</label><input class="fi" id="me-desc" placeholder="Description"></div>
+  <div class="fg"><label class="fl">Amount ($)</label><input class="fi" id="me-amt" type="number" placeholder="0.00"></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-exp')">Cancel</button><button class="btn-save" onclick="saveExpense()">Save</button></div>
+</div></div>
+
+<div class="modal-overlay" id="m-order"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title">New Order</div><button class="modal-x" onclick="closeModal('m-order')">✕</button></div>
+  <div class="fg"><label class="fl">Customer</label><input class="fi" id="mo-cust" placeholder="Full name"></div>
+  <div class="fg"><label class="fl">Product</label><input class="fi" id="mo-prod" placeholder="e.g. Wedding Cake 3 tiers"></div>
+  <div class="r2"><div class="fg"><label class="fl">Order Date</label><input class="fi" id="mo-date" type="date"></div><div class="fg"><label class="fl">Due Date</label><input class="fi" id="mo-due" type="date"></div></div>
+  <div class="r2"><div class="fg"><label class="fl">Price ($)</label><input class="fi" id="mo-price" type="number" placeholder="0.00"></div><div class="fg"><label class="fl">Deposit ($)</label><input class="fi" id="mo-dep" type="number" placeholder="0.00"></div></div>
+  <div class="fg"><label class="fl">Notes</label><input class="fi" id="mo-notes" placeholder="Design details, allergies..."></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-order')">Cancel</button><button class="btn-save" onclick="saveOrder()">Save</button></div>
+</div></div>
+
+<div class="modal-overlay" id="m-client"><div class="modal">
+  <div class="modal-hdr"><div class="modal-title" id="m-client-title">Add Client</div><button class="modal-x" onclick="closeModal('m-client')">✕</button></div>
+  <div class="fg"><label class="fl" id="mc-name-lbl">Name</label><input class="fi" id="mc-name" placeholder="Full name"></div>
+  <div class="r2"><div class="fg"><label class="fl" id="mc-email-lbl">Email</label><input class="fi" id="mc-email" type="email" placeholder="client@email.com"></div><div class="fg"><label class="fl" id="mc-phone-lbl">Phone</label><input class="fi" id="mc-phone" placeholder="+1 555-0100"></div></div>
+  <div class="fg"><label class="fl" id="mc-notes-lbl">Notes</label><input class="fi" id="mc-notes" placeholder="Allergies, preferences, favorite products..."></div>
+  <div class="f-actions"><button class="btn-cancel" onclick="closeModal('m-client')">Cancel</button><button class="btn-save" onclick="saveClient()">Save</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ADD CALENDAR EVENT MODAL -->
+<div class="modal-overlay" id="m-cal-add"><div class="modal" style="max-width:400px">
+  <div class="modal-hdr"><div class="modal-title">New Event</div><button class="modal-x" onclick="closeModal('m-cal-add')">✕</button></div>
+  <div class="fg"><label class="fl">Title</label><input class="fi" id="cae-title" placeholder="Event title"></div>
+  <div class="fg"><label class="fl">Date</label><input class="fi" id="cae-date" type="date"></div>
+  <div class="r2">
+    <div class="fg"><label class="fl">Start Time</label><input class="fi" id="cae-start" type="time" value="09:00"></div>
+    <div class="fg"><label class="fl">End Time</label><input class="fi" id="cae-end" type="time" value="10:00"></div>
+  </div>
+  <div class="fg"><label class="fl">Description</label><input class="fi" id="cae-desc" placeholder="Optional"></div>
+  <div class="f-actions">
+    <button class="btn-cancel" onclick="closeModal('m-cal-add')">Cancel</button>
+    <button class="btn-save" onclick="createCalendarEvent()">Create Event</button>
+  </div>
+</div></div>
+
+<!-- VIEW/DELETE CALENDAR EVENT MODAL -->
+<div class="modal-overlay" id="m-cal-view"><div class="modal" style="max-width:380px">
+  <div class="modal-hdr"><div class="modal-title" id="cev-title">Event</div><button class="modal-x" onclick="closeModal('m-cal-view')">✕</button></div>
+  <div id="cev-body" style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6"></div>
+  <div class="f-actions">
+    <button class="btn-cancel" onclick="closeModal('m-cal-view')">Close</button>
+    <button id="cev-delete-btn" style="background:var(--danger-l);color:var(--danger);border:none;padding:10px 18px;border-radius:40px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer" onclick="deleteCalendarEvent()">Delete from Calendar</button>
+  </div>
+</div></div>
+<script>
+// ════════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════════
+var CLIENT_ID = '879836754708-vhotn8u4827sa2bgum7fq0epqnds4n4r.apps.googleusercontent.com';
+var SCOPES = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file';
+
+// ════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ════════════════════════════════════════════════════════════
+var TL = {
+  en:{
+    loginSub:'Your bakery business management system, connected to your own Google Sheets.',
+    feat1:'Your data in <strong>your</strong> Google Sheets — private',
+    feat2:'Only you can access your data',
+    feat3:'Works on phone and computer',
+    loginBtn:'Continue with Google',
+    loginNote:'By connecting, the app creates a Google Sheet in your Drive to store your data.',
+    loading:'Loading...',signout:'Sign out',synced:'Synced',
+    dashboard:'Dashboard',sales:'Sales',expenses:'Expenses',orders:'Orders',tasks:'To-Do List',calendar:'Calendar',
+    products:'Cost Calculator',inventory:'Inventory',goals:'Goals',settings:'Settings',
+    overview:'OVERVIEW',daily:'DAILY',business:'BUSINESS',config:'CONFIG',
+    addNew:'Add New',newSale:'+ New Sale',addExp:'+ Add Expense',newOrder:'+ New Order',
+    revenue:'Total Revenue',alltime:'all time',activeOrders:'Active Orders',inProgress:'in progress',
+    lowStock:'Low Stock',reorder:'items to reorder',pendingPay:'Pending Payments',
+    recentSales:'Recent Sales',last5:'Last 5',pendingOrders:'Pending Orders',seeAll:'See all →',
+    noSales:'No sales yet',noPending:'No pending orders',
+    revChart:'Revenue',months6:'6 months',byCategory:'By Category',
+    expCats:'Expenses by Category',critStock:'Critical Stock',stockOk:'All stock OK ✓',
+    totalRev:'Total Revenue',transactions:'Transactions',avg:'Average',bestCat:'Best Category',
+    salesLog:'Sales Log',totalExp:'Total Expenses',thisMonth:'This Month',topCat:'Top Category',
+    expLog:'Expense Log',totalOrd:'Total',pending:'Pending',completed:'Completed',balanceDue:'Balance Due',
+    orderTracker:'Order Tracker',costCalc:'Cost Calculator',prodName:'Product Name',
+    ing:'Ingredients ($)',pkg:'Packaging ($)',hrs:'Labor Hours',rate:'Rate/hr ($)',
+    salePrice:'Sale Price ($)',unitsMo:'Units/Month',cost:'Total Cost',profUnit:'Profit/unit',margin:'Margin',
+    saveProd:'Save Product',clear:'Clear',margins:'Margins',catalog:'Catalog',
+    items:'Items',reorderNow:'Reorder Now',lowStockLbl:'Low Stock',totalVal:'Total Value',
+    stockLevels:'Stock Levels',addItem:'Add Item',itemName:'Name',inStock:'In Stock',minimum:'Minimum',
+    unitCost:'Unit Cost ($)',supplier:'Supplier',addItemBtn:'Add Item',noItems:'No items yet',
+    goalTotal:'Total',onTrack:'On Track',behind:'Behind',goalDone:'Completed',progress:'Progress',
+    newGoal:'New Goal',goalDesc:'Description',target:'Target',current:'Current',deadline:'Deadline',
+    priority:'Priority',high:'High',medium:'Medium',low:'Low',saveGoal:'Save Goal',noGoals:'No goals set',
+    myBiz:'My Business',bizName:'Business Name',language:'Language',colors:'Colors',
+    typography:'Typography',widgets:'Dashboard Widgets',data:'Data',sampleData:'Load Sample Data',
+    exportCSV:'Export CSV',signoutBtn:'Sign Out',save:'Save',cancel:'Cancel',reset:'Reset',
+    confirmDel:'Delete this entry?',confirmSignout:'Sign out?',saved:'Saved',deleted:'Deleted',
+    sampleLoaded:'Sample data loaded!',exported:'Exported!',copiedId:'Sheet ID copied ✓',
+    fillRequired:'Fill required fields',saleSaved:'Sale saved',expSaved:'Expense saved',
+    orderSaved:'Order saved',prodSaved:'Product saved',itemSaved:'Item saved',goalSaved:'Goal saved',
+    orderCompleted:'Order completed ✓',
+    taskTotal:'Total Tasks',taskPending:'Pending',taskDone:'Completed',taskList:'To-Do List',
+    newTask:'New Task',taskDesc:'Task',taskDue:'Due Date',addTask:'Add Task',noTasks:'No tasks yet — you\'re all caught up!',
+    taskSaved:'Task added',taskDoneMsg:'Task completed ✓',
+    gcalConnect:'Google Calendar',gcalDesc:'Connect your Google Calendar — your orders and tasks with due dates sync automatically as events, and you\'ll see your existing Calendar events here too.',
+    gcalBtn:'Connect Google Calendar',gcalConnected:'Connected to Google Calendar',gcalDisconnect:'Disconnect',
+    upcomingEvents:'Upcoming Events',noEvents:'No upcoming events',
+    today:'Today',viewDay:'Day',refreshEvents:'Refresh Events',viewWeek:'Week',viewMonth:'Month',gcalNotConnected:'Not connected',
+    clients:'Clients',reports:'Reports',
+    clientTotal:'Total Clients',clientNew:'New This Month',clientTop:'Top Spender',
+    clientBook:'Client Book',addClient:'+ Add Client',clientName:'Name',clientEmail:'Email',
+    clientPhone:'Phone',clientNotes:'Notes',clientNotesPlaceholder:'Allergies, preferences, favorite products...',
+    saveClient:'Save Client',noClients:'No clients yet — add your first one!',
+    purchases:'Purchases',totalSpent:'Total Spent',lastPurchase:'Last Purchase',never:'Never',
+    clientSaved:'Client saved',viewHistory:'View History',clientHistory:'Purchase History',
+    backToClients:'← Back to Clients',noPurchaseHistory:'No purchase history yet',
+    reportsTitle:'Monthly Reports',reportsDesc:'Download a complete summary of any month — revenue, expenses, profit and top products.',
+    selectMonth:'Select Month',downloadReport:'Download PDF Report',generatingReport:'Generating report...',
+    reportReady:'Report ready!',
+    notifSettings:'Dashboard Notifications',notifDesc:'Choose which alerts appear on your dashboard',
+    notifLowStock:'Low stock alerts',notifLowStockDesc:'Show when inventory items are below minimum',
+    notifOrders:'Upcoming order deadlines',notifOrdersDesc:'Show orders due in the next 3 days',
+    notifTasks:'Pending tasks',notifTasksDesc:'Show overdue or due-soon tasks',
+    alertsTitle:'Needs Attention',noAlerts:'Everything looks good ✓',
+    alertLowStock:'low stock item','alertLowStockPl':'low stock items',
+    alertDueOrder:'order due soon','alertDueOrderPl':'orders due soon',
+    alertTask:'task due','alertTaskPl':'tasks due',
+    mn:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    dw:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+  },
+  es:{
+    loginSub:'Tu sistema de gestión de panadería, conectado a tu propio Google Sheets.',
+    feat1:'Tus datos en <strong>tu</strong> Google Sheets — privados',
+    feat2:'Solo vos podés acceder a tus datos',
+    feat3:'Funciona en celular y computadora',
+    loginBtn:'Continuar con Google',
+    loginNote:'Al conectarte, la app crea un Google Sheet en tu Drive para guardar tus datos.',
+    loading:'Cargando...',signout:'Cerrar sesión',synced:'Sincronizado',
+    dashboard:'Dashboard',sales:'Ventas',expenses:'Gastos',orders:'Pedidos',tasks:'Lista de Tareas',calendar:'Calendario',
+    products:'Calculadora de Costos',inventory:'Inventario',goals:'Metas',settings:'Ajustes',
+    overview:'PRINCIPAL',daily:'DIARIO',business:'NEGOCIO',config:'CONFIG',
+    addNew:'Añadir Nuevo',newSale:'+ Nueva Venta',addExp:'+ Agregar Gasto',newOrder:'+ Nuevo Pedido',
+    revenue:'Ingresos Totales',alltime:'todos los tiempos',activeOrders:'Pedidos Activos',inProgress:'en curso',
+    lowStock:'Stock Bajo',reorder:'items a reponer',pendingPay:'Pagos Pendientes',
+    recentSales:'Ventas Recientes',last5:'Últimas 5',pendingOrders:'Pedidos Pendientes',seeAll:'Ver todos →',
+    noSales:'Sin ventas aún',noPending:'Sin pedidos pendientes',
+    revChart:'Ingresos',months6:'6 meses',byCategory:'Por Categoría',
+    expCats:'Gastos por Categoría',critStock:'Stock Crítico',stockOk:'Todo el stock está bien ✓',
+    totalRev:'Ingresos Totales',transactions:'Transacciones',avg:'Promedio',bestCat:'Mejor Categoría',
+    salesLog:'Registro de Ventas',totalExp:'Gastos Totales',thisMonth:'Este Mes',topCat:'Mayor Categoría',
+    expLog:'Registro de Gastos',totalOrd:'Total',pending:'Pendientes',completed:'Completados',balanceDue:'Balance Pendiente',
+    orderTracker:'Gestión de Pedidos',costCalc:'Calculadora de Costos',prodName:'Nombre',
+    ing:'Ingredientes ($)',pkg:'Packaging ($)',hrs:'Horas Labor',rate:'Tarifa/hr ($)',
+    salePrice:'Precio Venta ($)',unitsMo:'Unidades/Mes',cost:'Costo Total',profUnit:'Ganancia/unidad',margin:'Margen',
+    saveProd:'Guardar Producto',clear:'Limpiar',margins:'Márgenes',catalog:'Catálogo',
+    items:'Items',reorderNow:'Reordenar Ya',lowStockLbl:'Stock Bajo',totalVal:'Valor Total',
+    stockLevels:'Niveles de Stock',addItem:'Agregar Item',itemName:'Nombre',inStock:'En Stock',minimum:'Mínimo',
+    unitCost:'Costo Unit ($)',supplier:'Proveedor',addItemBtn:'Agregar',noItems:'Sin items',
+    goalTotal:'Totales',onTrack:'En Camino',behind:'Atrasadas',goalDone:'Completadas',progress:'Progreso',
+    newGoal:'Nueva Meta',goalDesc:'Descripción',target:'Objetivo',current:'Actual',deadline:'Fecha Límite',
+    priority:'Prioridad',high:'Alta',medium:'Media',low:'Baja',saveGoal:'Guardar Meta',noGoals:'Sin metas',
+    myBiz:'Mi Negocio',bizName:'Nombre del Negocio',language:'Idioma',colors:'Colores',
+    typography:'Tipografía',widgets:'Widgets del Dashboard',data:'Datos',sampleData:'Cargar Datos de Ejemplo',
+    exportCSV:'Exportar CSV',signoutBtn:'Cerrar Sesión',save:'Guardar',cancel:'Cancelar',reset:'Resetear',
+    confirmDel:'¿Borrar este registro?',confirmSignout:'¿Cerrar sesión?',saved:'Guardado',deleted:'Eliminado',
+    sampleLoaded:'¡Datos de ejemplo cargados!',exported:'¡Exportado!',copiedId:'Sheet ID copiado ✓',
+    fillRequired:'Completá los campos requeridos',saleSaved:'Venta guardada',expSaved:'Gasto guardado',
+    orderSaved:'Pedido guardado',prodSaved:'Producto guardado',itemSaved:'Item guardado',goalSaved:'Meta guardada',
+    orderCompleted:'Pedido completado ✓',
+    taskTotal:'Tareas Totales',taskPending:'Pendientes',taskDone:'Completadas',taskList:'Lista de Tareas',
+    newTask:'Nueva Tarea',taskDesc:'Tarea',taskDue:'Fecha Límite',addTask:'Agregar Tarea',noTasks:'¡Sin tareas pendientes!',
+    taskSaved:'Tarea agregada',taskDoneMsg:'Tarea completada ✓',
+    gcalConnect:'Google Calendar',gcalDesc:'Conectá tu Google Calendar — tus pedidos y tareas con fecha se sincronizan automáticamente como eventos, y también vas a ver tus eventos existentes acá.',
+    gcalBtn:'Conectar Google Calendar',gcalConnected:'Conectado a Google Calendar',gcalDisconnect:'Desconectar',
+    upcomingEvents:'Próximos Eventos',noEvents:'Sin eventos próximos',
+    today:'Hoy',viewDay:'Día',refreshEvents:'Actualizar Eventos',viewWeek:'Semana',viewMonth:'Mes',gcalNotConnected:'No conectado',
+    clients:'Clientes',reports:'Reportes',
+    clientTotal:'Clientes Totales',clientNew:'Nuevos Este Mes',clientTop:'Mejor Cliente',
+    clientBook:'Libro de Clientes',addClient:'+ Agregar Cliente',clientName:'Nombre',clientEmail:'Email',
+    clientPhone:'Teléfono',clientNotes:'Notas',clientNotesPlaceholder:'Alergias, preferencias, productos favoritos...',
+    saveClient:'Guardar Cliente',noClients:'Sin clientes aún — ¡agregá el primero!',
+    purchases:'Compras',totalSpent:'Total Gastado',lastPurchase:'Última Compra',never:'Nunca',
+    clientSaved:'Cliente guardado',viewHistory:'Ver Historial',clientHistory:'Historial de Compras',
+    backToClients:'← Volver a Clientes',noPurchaseHistory:'Sin historial de compras aún',
+    reportsTitle:'Reportes Mensuales',reportsDesc:'Descargá un resumen completo de cualquier mes — ingresos, gastos, ganancia y productos más vendidos.',
+    selectMonth:'Seleccionar Mes',downloadReport:'Descargar Reporte PDF',generatingReport:'Generando reporte...',
+    reportReady:'¡Reporte listo!',
+    notifSettings:'Notificaciones del Dashboard',notifDesc:'Elegí qué alertas aparecen en tu dashboard',
+    notifLowStock:'Alertas de stock bajo',notifLowStockDesc:'Mostrar cuando los insumos están por debajo del mínimo',
+    notifOrders:'Pedidos por vencer',notifOrdersDesc:'Mostrar pedidos que vencen en los próximos 3 días',
+    notifTasks:'Tareas pendientes',notifTasksDesc:'Mostrar tareas vencidas o por vencer',
+    alertsTitle:'Necesita Atención',noAlerts:'Todo está bien ✓',
+    alertLowStock:'item con stock bajo','alertLowStockPl':'items con stock bajo',
+    alertDueOrder:'pedido por vencer','alertDueOrderPl':'pedidos por vencer',
+    alertTask:'tarea pendiente','alertTaskPl':'tareas pendientes',
+    mn:['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+    dw:['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'],
+  },
+  pt:{
+    loginSub:'Seu sistema de gestão de padaria, conectado à sua própria Planilha Google.',
+    feat1:'Seus dados na <strong>sua</strong> Planilha Google — privados',
+    feat2:'Só você pode acessar seus dados',
+    feat3:'Funciona em celular e computador',
+    loginBtn:'Continuar com Google',
+    loginNote:'Ao conectar, o app cria uma Planilha Google no seu Drive para salvar seus dados.',
+    loading:'Carregando...',signout:'Sair',synced:'Sincronizado',
+    dashboard:'Dashboard',sales:'Vendas',expenses:'Despesas',orders:'Pedidos',tasks:'Lista de Tarefas',calendar:'Calendário',
+    products:'Calculadora de Custos',inventory:'Estoque',goals:'Metas',settings:'Configurações',
+    overview:'PRINCIPAL',daily:'DIÁRIO',business:'NEGÓCIO',config:'CONFIG',
+    addNew:'Adicionar',newSale:'+ Nova Venda',addExp:'+ Adicionar Despesa',newOrder:'+ Novo Pedido',
+    revenue:'Receita Total',alltime:'todos os tempos',activeOrders:'Pedidos Ativos',inProgress:'em andamento',
+    lowStock:'Estoque Baixo',reorder:'itens para repor',pendingPay:'Pagamentos Pendentes',
+    recentSales:'Vendas Recentes',last5:'Últimas 5',pendingOrders:'Pedidos Pendentes',seeAll:'Ver todos →',
+    noSales:'Sem vendas ainda',noPending:'Sem pedidos pendentes',
+    revChart:'Receita',months6:'6 meses',byCategory:'Por Categoria',
+    expCats:'Despesas por Categoria',critStock:'Estoque Crítico',stockOk:'Todo estoque OK ✓',
+    totalRev:'Receita Total',transactions:'Transações',avg:'Média',bestCat:'Melhor Categoria',
+    salesLog:'Registro de Vendas',totalExp:'Despesas Totais',thisMonth:'Este Mês',topCat:'Maior Categoria',
+    expLog:'Registro de Despesas',totalOrd:'Total',pending:'Pendentes',completed:'Concluídos',balanceDue:'Saldo Devedor',
+    orderTracker:'Gestão de Pedidos',costCalc:'Calculadora de Custos',prodName:'Nome',
+    ing:'Ingredientes ($)',pkg:'Embalagem ($)',hrs:'Horas Trabalho',rate:'Taxa/hr ($)',
+    salePrice:'Preço Venda ($)',unitsMo:'Unidades/Mês',cost:'Custo Total',profUnit:'Lucro/unidade',margin:'Margem',
+    saveProd:'Salvar Produto',clear:'Limpar',margins:'Margens',catalog:'Catálogo',
+    items:'Itens',reorderNow:'Repor Agora',lowStockLbl:'Estoque Baixo',totalVal:'Valor Total',
+    stockLevels:'Níveis de Estoque',addItem:'Adicionar Item',itemName:'Nome',inStock:'Em Estoque',minimum:'Mínimo',
+    unitCost:'Custo Unit ($)',supplier:'Fornecedor',addItemBtn:'Adicionar',noItems:'Sem itens',
+    goalTotal:'Total',onTrack:'No Caminho',behind:'Atrasadas',goalDone:'Concluídas',progress:'Progresso',
+    newGoal:'Nova Meta',goalDesc:'Descrição',target:'Meta',current:'Atual',deadline:'Prazo',
+    priority:'Prioridade',high:'Alta',medium:'Média',low:'Baixa',saveGoal:'Salvar Meta',noGoals:'Sem metas',
+    myBiz:'Meu Negócio',bizName:'Nome do Negócio',language:'Idioma',colors:'Cores',
+    typography:'Tipografia',widgets:'Widgets do Dashboard',data:'Dados',sampleData:'Carregar Dados de Exemplo',
+    exportCSV:'Exportar CSV',signoutBtn:'Sair',save:'Salvar',cancel:'Cancelar',reset:'Redefinir',
+    confirmDel:'Deletar este registro?',confirmSignout:'Sair?',saved:'Salvo',deleted:'Deletado',
+    sampleLoaded:'Dados de exemplo carregados!',exported:'Exportado!',copiedId:'ID copiado ✓',
+    fillRequired:'Preencha os campos obrigatórios',saleSaved:'Venda salva',expSaved:'Despesa salva',
+    orderSaved:'Pedido salvo',prodSaved:'Produto salvo',itemSaved:'Item salvo',goalSaved:'Meta salva',
+    orderCompleted:'Pedido concluído ✓',
+    taskTotal:'Tarefas Totais',taskPending:'Pendentes',taskDone:'Concluídas',taskList:'Lista de Tarefas',
+    newTask:'Nova Tarefa',taskDesc:'Tarefa',taskDue:'Prazo',addTask:'Adicionar Tarefa',noTasks:'Sem tarefas pendentes!',
+    taskSaved:'Tarefa adicionada',taskDoneMsg:'Tarefa concluída ✓',
+    gcalConnect:'Google Agenda',gcalDesc:'Conecte sua Google Agenda — seus pedidos e tarefas com prazo sincronizam automaticamente como eventos, e você também verá seus eventos existentes aqui.',
+    gcalBtn:'Conectar Google Agenda',gcalConnected:'Conectado à Google Agenda',gcalDisconnect:'Desconectar',
+    upcomingEvents:'Próximos Eventos',noEvents:'Sem eventos próximos',
+    today:'Hoje',viewDay:'Dia',refreshEvents:'Atualizar Eventos',viewWeek:'Semana',viewMonth:'Mês',gcalNotConnected:'Não conectado',
+    clients:'Clientes',reports:'Relatórios',
+    clientTotal:'Clientes Totais',clientNew:'Novos Este Mês',clientTop:'Melhor Cliente',
+    clientBook:'Livro de Clientes',addClient:'+ Adicionar Cliente',clientName:'Nome',clientEmail:'Email',
+    clientPhone:'Telefone',clientNotes:'Notas',clientNotesPlaceholder:'Alergias, preferências, produtos favoritos...',
+    saveClient:'Salvar Cliente',noClients:'Sem clientes ainda — adicione o primeiro!',
+    purchases:'Compras',totalSpent:'Total Gasto',lastPurchase:'Última Compra',never:'Nunca',
+    clientSaved:'Cliente salvo',viewHistory:'Ver Histórico',clientHistory:'Histórico de Compras',
+    backToClients:'← Voltar aos Clientes',noPurchaseHistory:'Sem histórico de compras ainda',
+    reportsTitle:'Relatórios Mensais',reportsDesc:'Baixe um resumo completo de qualquer mês — receita, despesas, lucro e produtos mais vendidos.',
+    selectMonth:'Selecionar Mês',downloadReport:'Baixar Relatório PDF',generatingReport:'Gerando relatório...',
+    reportReady:'Relatório pronto!',
+    notifSettings:'Notificações do Dashboard',notifDesc:'Escolha quais alertas aparecem no seu dashboard',
+    notifLowStock:'Alertas de estoque baixo',notifLowStockDesc:'Mostrar quando os itens estão abaixo do mínimo',
+    notifOrders:'Pedidos a vencer',notifOrdersDesc:'Mostrar pedidos que vencem nos próximos 3 dias',
+    notifTasks:'Tarefas pendentes',notifTasksDesc:'Mostrar tarefas vencidas ou a vencer',
+    alertsTitle:'Precisa de Atenção',noAlerts:'Tudo certo ✓',
+    alertLowStock:'item com estoque baixo','alertLowStockPl':'itens com estoque baixo',
+    alertDueOrder:'pedido a vencer','alertDueOrderPl':'pedidos a vencer',
+    alertTask:'tarefa pendente','alertTaskPl':'tarefas pendentes',
+    mn:['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'],
+    dw:['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],
+  }
+};
+
+var SALE_CATS=['Custom Cakes','Wedding Cakes','Cupcakes','Cookies','Bread & Pastries','Wholesale','Online Orders','Events'];
+var EXP_CATS=['Ingredients','Packaging','Equipment','Rent','Utilities','Marketing','Staff','Delivery','Other'];
+var PAY_METHODS=['Cash','Card','Transfer','Online'];
+
+// ════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════
+var lang=localStorage.getItem('bm_lang')||'en';
+var T=TL[lang];
+var accessToken='';
+var currentUser=null;
+var SPREADSHEET_ID=localStorage.getItem('bm_sheet_id')||'';
+var CH={};
+var DB={sales:[],expenses:[],orders:[],products:[],inventory:[],goals:[],tasks:[],clients:[],settings:{},widgets:{},theme:{}};
+
+function saveDB(k){localStorage.setItem('bm_'+k,JSON.stringify(DB[k]));}
+function loadDB(k){return JSON.parse(localStorage.getItem('bm_'+k)||'[]');}
+function loadDBObj(k){return JSON.parse(localStorage.getItem('bm_'+k)||'{}');}
+
+// ════════════════════════════════════════════════════════════
+// LANG
+// ════════════════════════════════════════════════════════════
+function setLang(l){
+  lang=l;T=TL[l]||TL['en'];localStorage.setItem('bm_lang',l);
+  document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.toggle('active',b.getAttribute('onclick')==="setLang('"+l+"')");});
+  var s=document.getElementById('set-lang-sel');if(s)s.value=l;
+  applyLangUI();
+  if(document.getElementById('app').classList.contains('active')){
+    buildNav();buildPages();
+    if(DB.settings.name){tt('sb-biz-name',DB.settings.name);tt('drawer-biz-name',DB.settings.name);}
+    go(currentPage||'dashboard');
+  }
+}
+function applyLangUI(){
+  tt('login-sub',T.loginSub);tt('btn-google-txt',T.loginBtn);tt('login-note',T.loginNote);
+  tt('loading-txt',T.loading);tt('txt-signout',T.signout);tt('drawer-signout',T.signout);
+  tt('sync-text',T.synced);tt('cta-txt',T.addNew);
+  thtml('feat1',T.feat1);thtml('feat2',T.feat2);thtml('feat3',T.feat3);
+}
+function tt(id,txt){var e=document.getElementById(id);if(e&&txt!==undefined)e.textContent=txt;}
+function thtml(id,html){var e=document.getElementById(id);if(e&&html!==undefined)e.innerHTML=html;}
+
+// ════════════════════════════════════════════════════════════
+// AUTH — Simple, no async/await, no blocking sheet checks
+// ════════════════════════════════════════════════════════════
+function signIn(){
+  if(!window.google){toast('Refresh the page','err');return;}
+  google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:SCOPES,
+    callback:function(r){
+      if(r.error){toast('Auth error, try again','err');return;}
+      accessToken=r.access_token;
+      showScreen('screen-loading');
+      tt('loading-txt','Signing in...');
+      // Fetch userinfo — needed for name/picture
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+        headers:{Authorization:'Bearer '+accessToken}
+      })
+      .then(function(x){return x.json();})
+      .then(function(u){currentUser=u;startApp(u);})
+      .catch(function(){
+        // If userinfo fails, still let user in with minimal info
+        currentUser={name:'User',email:'',picture:''};
+        startApp(currentUser);
+      });
+    }
+  }).requestAccessToken();
+}
+
+function signOut(){
+  if(!confirm(T.confirmSignout))return;
+  accessToken='';currentUser=null;
+  showScreen('screen-login');
+}
+
+function startApp(u){
+  tt('user-name',u.name||u.email);
+  tt('drawer-user-name',u.name||u.email);
+  if(u.picture){
+    ['user-pic','drawer-user-pic'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){el.src=u.picture;el.style.display='';}
+    });
+    ['user-ph','drawer-user-ph'].forEach(function(id){
+      var el=document.getElementById(id);if(el)el.style.display='none';
+    });
+  } else {
+    var ini=(u.name||u.email||'?')[0].toUpperCase();
+    tt('user-ph',ini);tt('drawer-user-ph',ini);
+  }
+
+  // Load local data immediately — instant UI, no waiting on network
+  DB.sales=loadDB('sales');DB.expenses=loadDB('expenses');DB.orders=loadDB('orders');
+  DB.products=loadDB('products');DB.inventory=loadDB('inventory');DB.goals=loadDB('goals');DB.tasks=loadDB('tasks');DB.clients=loadDB('clients');
+  DB.settings=loadDBObj('settings');DB.widgets=loadDBObj('widgets');DB.theme=loadDBObj('theme');
+  // Force reset theme if it's the old version
+  if(!localStorage.getItem('bm_theme_v2')){localStorage.removeItem('bm_theme');DB.theme={};localStorage.setItem('bm_theme_v2','1');}
+
+  populateSel('ms-cat',SALE_CATS);populateSel('me-cat',EXP_CATS);populateSel('ms-pay',PAY_METHODS);
+
+  applyTheme();
+
+  // Phase 1: Show app immediately with nav + loading placeholder
+  showScreen(null);
+  document.getElementById('app').classList.add('active');
+  buildNav();
+
+  // Phase 2: Build all pages on next frame (keeps UI responsive)
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      buildPages();applyWidgets();
+      if(DB.settings.name){tt('sb-biz-name',DB.settings.name);tt('drawer-biz-name',DB.settings.name);}
+      go('dashboard');
+
+      // Background tasks — non-blocking
+      setTimeout(function(){
+        if(SPREADSHEET_ID){setSS('synced',T.synced);}else{initSheet();}
+        if(localStorage.getItem('bm_gcal_connected')==='1'){
+          gcalConnected=true;
+          // Delay gcal fetch so login feels instant
+          setTimeout(fetchGCalEvents, 2000);
+        }
+      }, 500);
+    });
+  });
+}
+
+function populateSel(id,opts){var el=document.getElementById(id);if(!el)return;el.innerHTML=opts.map(function(o){return '<option>'+o+'</option>';}).join('');}
+
+// ════════════════════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════════════════════
+var currentPage='dashboard';
+function buildNav(){
+  var h='<div class="nav-sec">'+T.overview+'</div>'+ni('dashboard',T.dashboard,'⊞')+
+        '<div class="nav-sec">'+T.daily+'</div>'+ni('sales',T.sales,'💰')+ni('expenses',T.expenses,'🧾')+ni('orders',T.orders,'📋','orders-badge')+ni('tasks',T.tasks,'✓','tasks-badge')+ni('calendar',T.calendar,'📅')+
+        '<div class="nav-sec">'+T.business+'</div>'+ni('clients',T.clients,'👥')+ni('products',T.products,'🧮')+ni('inventory',T.inventory,'📦')+ni('goals',T.goals,'🎯')+ni('reports',T.reports,'📊')+
+        '<div class="nav-sec">'+T.config+'</div>'+ni('settings',T.settings,'⚙️');
+  document.getElementById('sidebar-nav').innerHTML=h;
+  document.getElementById('drawer-nav').innerHTML=h;
+}
+function ni(page,label,icon,badgeId){
+  return '<div class="nav-item" onclick="go(\''+page+'\');closeDrawer()">'+
+    '<span class="nav-ic">'+icon+'</span><span class="nav-lbl">'+label+'</span>'+
+    (badgeId?'<span class="nav-badge" id="'+badgeId+'" style="display:none">0</span>':'')+
+    '<span class="nav-tip">'+label+'</span></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// PAGES
+// ════════════════════════════════════════════════════════════
+function buildPages(){
+  document.getElementById('app-scroll').innerHTML=
+  `<div class="page active" id="page-dashboard">
+    <div class="welcome-banner" id="welcome-banner">
+      <div class="welcome-text" id="welcome-text">Hello! 👋</div>
+      <div class="welcome-sub" id="welcome-sub">Here's your bakery overview</div>
+    </div>
+    <div id="dash-alerts"></div>
+    <div class="kpi-grid kpi-4" id="kpi-container">
+      <div class="kpi-card" id="w-revenue"><div class="kpi-top"><div class="kpi-icon" style="background:var(--success-l);color:var(--success)">💰</div></div><div class="kpi-label">${T.revenue}</div><div class="kpi-value" id="d-rev">$0</div><div class="kpi-sub">${T.alltime}</div></div>
+      <div class="kpi-card" id="w-orders-kpi"><div class="kpi-top"><div class="kpi-icon" style="background:var(--primary-l);color:var(--primary)">📋</div></div><div class="kpi-label">${T.activeOrders}</div><div class="kpi-value" id="d-orders-cnt">0</div><div class="kpi-sub">${T.inProgress}</div></div>
+      <div class="kpi-card" id="w-stock-kpi"><div class="kpi-top"><div class="kpi-icon" style="background:var(--warning-l);color:var(--warning)">📦</div></div><div class="kpi-label">${T.lowStock}</div><div class="kpi-value" id="d-stock">0</div><div class="kpi-sub">${T.reorder}</div></div>
+      <div class="kpi-card accent" id="w-balance" onclick="go('orders')"><div class="kpi-top"><div class="kpi-icon" style="background:rgba(255,255,255,.2)">💳</div></div><div class="kpi-label">${T.pendingPay}</div><div class="kpi-value" id="d-balance">$0</div></div>
+    </div>
+    <div class="g65" id="w-recent-section">
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.recentSales}</div><span class="card-tag">${T.last5}</span></div><div id="d-recent"><div class="empty">${T.noSales}</div></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.pendingOrders}</div><a class="card-link" onclick="go('orders')">${T.seeAll}</a></div><div id="d-pending"><div class="empty">${T.noPending}</div></div></div>
+    </div>
+    <div class="g2" id="w-charts-section">
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.revChart}</div><span class="card-tag">${T.months6}</span></div><div class="chart-wrap"><canvas id="ch-rev"></canvas></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.byCategory}</div></div><div class="chart-wrap"><canvas id="ch-cat"></canvas></div></div>
+    </div>
+    <div class="g2" id="w-bottom-section">
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.expCats}</div></div><div id="d-exp-cats"><div class="empty">—</div></div></div>
+      <div class="card-dark"><div class="card-hdr"><div class="card-title">${T.critStock}</div></div><div id="d-stock-list"><div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-size:13px">${T.stockOk}</div></div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-sales">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">${T.totalRev}</div><div class="kpi-value" id="s-rev">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.transactions}</div><div class="kpi-value" id="s-cnt">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.avg}</div><div class="kpi-value" id="s-avg">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.bestCat}</div><div class="kpi-value" style="font-size:16px;margin-top:4px" id="s-best">—</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">${T.salesLog}</div><button class="btn-save" onclick="openModal('m-sale')" style="padding:8px 16px;border-radius:8px;font-size:12px">${T.newSale}</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Product</th><th>Qty</th><th>Total</th><th>Payment</th><th></th></tr></thead><tbody id="sales-tbody"></tbody></table></div></div>
+  </div>
+
+  <div class="page" id="page-expenses">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">${T.totalExp}</div><div class="kpi-value" id="e-tot">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.thisMonth}</div><div class="kpi-value" id="e-month">$0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.topCat}</div><div class="kpi-value" style="font-size:16px;margin-top:4px" id="e-big">—</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">${T.expLog}</div><button class="btn-save" onclick="openModal('m-exp')" style="padding:8px 16px;border-radius:8px;font-size:12px">${T.addExp}</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead><tbody id="exp-tbody"></tbody></table></div></div>
+  </div>
+
+  <div class="page" id="page-orders">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">${T.totalOrd}</div><div class="kpi-value" id="o-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.pending}</div><div class="kpi-value" style="color:var(--warning)" id="o-pend">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.completed}</div><div class="kpi-value" style="color:var(--success)" id="o-comp">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">${T.balanceDue}</div><div class="kpi-value" id="o-bal">$0</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">${T.orderTracker}</div><button class="btn-save" onclick="openModal('m-order')" style="padding:8px 16px;border-radius:8px;font-size:12px">${T.newOrder}</button></div>
+    <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Price</th><th>Deposit</th><th>Balance</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody id="ord-tbody"></tbody></table></div></div>
+  </div>
+
+  <div class="page" id="page-tasks">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">${T.taskTotal}</div><div class="kpi-value" id="tk-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--warning)">${T.taskPending}</div><div class="kpi-value" style="color:var(--warning)" id="tk-pend">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--success)">${T.taskDone}</div><div class="kpi-value" style="color:var(--success)" id="tk-done">0</div></div>
+    </div>
+    <div class="g56">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">${T.taskList}</div></div>
+        <div id="tasks-list"><div class="empty">${T.noTasks}</div></div>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">${T.newTask}</div></div>
+        <div class="fg"><label class="fl">${T.taskDesc}</label><input class="fi" id="tk-name" placeholder="e.g. Order flour for next week"></div>
+        <div class="r2">
+          <div class="fg"><label class="fl">${T.taskDue}</label><input class="fi" id="tk-due" type="date"></div>
+          <div class="fg"><label class="fl">${T.priority}</label><select class="fi" id="tk-pri"><option value="High">${T.high}</option><option value="Medium">${T.medium}</option><option value="Low">${T.low}</option></select></div>
+        </div>
+        <button class="btn-save" style="width:100%;padding:11px;border-radius:10px;margin-top:4px" onclick="addTask()">${T.addTask}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-calendar">
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <div class="cal-toolbar">
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn-cancel" onclick="calToday()" style="padding:7px 14px;border-radius:8px;font-size:12px;border:1px solid var(--border)">${T.today}</button>
+          <div style="display:flex;gap:2px">
+            <button class="btn-icon" onclick="calPrev()" style="width:30px;height:30px">‹</button>
+            <button class="btn-icon" onclick="calNext()" style="width:30px;height:30px">›</button>
+          </div>
+          <div class="card-title" id="cal-title" style="font-size:16px">June 2026</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="gcal-status-text" style="font-size:11px;font-weight:600"></span>
+          <div class="cal-view-switch">
+            <button class="cal-view-btn" data-view="day" onclick="setCalView('day')">${T.viewDay}</button>
+            <button class="cal-view-btn" data-view="week" onclick="setCalView('week')">${T.viewWeek}</button>
+            <button class="cal-view-btn" data-view="month" onclick="setCalView('month')">${T.viewMonth}</button>
+          </div>
+        </div>
+      </div>
+      <div id="cal-grid"></div>
+    </div>
+    <div class="g2" style="align-items:stretch">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">${T.gcalConnect}</div></div>
+        <div id="gcal-status">
+          <p style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px">${T.gcalDesc}</p>
+          <button class="btn-save" onclick="connectGCal()" style="width:100%;padding:11px;border-radius:10px" id="gcal-btn">${T.gcalBtn}</button>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-size:10px;font-family:monospace;color:var(--text3);padding:5px 8px;background:var(--bg);border-radius:6px;min-height:18px;line-height:1.4" id="gcal-debug"></div>
+          <button onclick="fetchGCalEvents()" style="width:100%;margin-top:6px;padding:8px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-family:var(--font);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer">↻ ${T.refreshEvents}</button>
+        </div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;min-height:0">
+        <div class="card-hdr" style="flex-shrink:0"><div class="card-title">${T.upcomingEvents}</div></div>
+        <div id="gcal-events" style="overflow-y:auto;flex:1;max-height:220px"><div class="empty" style="padding:12px 0">${T.noEvents}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-clients">
+    <div class="kpi-grid kpi-3">
+      <div class="kpi-card"><div class="kpi-label">${T.clientTotal}</div><div class="kpi-value" id="cl-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--success)">${T.clientNew}</div><div class="kpi-value" style="color:var(--success)" id="cl-new">0</div></div>
+      <div class="kpi-card accent"><div class="kpi-label">${T.clientTop}</div><div class="kpi-value" style="font-size:18px;margin-top:4px" id="cl-top">—</div></div>
+    </div>
+    <div class="card" id="clients-list-view">
+      <div class="card-hdr"><div class="card-title">${T.clientBook}</div><button class="btn-save" onclick="openModal('m-client')" style="padding:8px 16px;border-radius:8px;font-size:12px">${T.addClient}</button></div>
+      <div id="clients-list"><div class="empty">${T.noClients}</div></div>
+    </div>
+    <div class="card" id="client-history-view" style="display:none">
+      <div class="card-hdr">
+        <div><a class="card-link" onclick="showClientsList()">${T.backToClients}</a><div class="card-title" style="margin-top:6px" id="ch-name">${T.clientHistory}</div></div>
+      </div>
+      <div class="g2" style="margin-bottom:16px">
+        <div class="kpi-card"><div class="kpi-label">${T.purchases}</div><div class="kpi-value" id="ch-count">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">${T.totalSpent}</div><div class="kpi-value" id="ch-total">$0</div></div>
+      </div>
+      <div id="ch-list"><div class="empty">${T.noPurchaseHistory}</div></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-reports">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">${T.reportsTitle}</div></div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:20px">${T.reportsDesc}</p>
+      <div class="fg" style="max-width:260px">
+        <label class="fl">${T.selectMonth}</label>
+        <input class="fi" id="report-month" type="month">
+      </div>
+      <button class="btn-save" onclick="downloadMonthlyReport()" style="padding:11px 24px;border-radius:10px;margin-top:8px" id="report-btn">${T.downloadReport}</button>
+    </div>
+  </div>
+
+  <div class="page" id="page-products">
+    <div class="g2">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">${T.costCalc}</div></div>
+        <div class="fg"><label class="fl">${T.prodName}</label><input class="fi" id="c-name" placeholder="e.g. Birthday Cake 6 inch"></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.ing}</label><input class="fi" id="c-ing" type="number" placeholder="0.00" oninput="calcM()"></div><div class="fg"><label class="fl">${T.pkg}</label><input class="fi" id="c-pkg" type="number" placeholder="0.00" oninput="calcM()"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.hrs}</label><input class="fi" id="c-hrs" type="number" placeholder="0" oninput="calcM()"></div><div class="fg"><label class="fl">${T.rate}</label><input class="fi" id="c-rate" type="number" placeholder="0.00" oninput="calcM()"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.salePrice}</label><input class="fi" id="c-price" type="number" placeholder="0.00" oninput="calcM()"></div><div class="fg"><label class="fl">${T.unitsMo}</label><input class="fi" id="c-units" type="number" placeholder="0"></div></div>
+        <div class="calc-out" id="calc-out">
+          <div class="calc-row"><span>${T.ing}</span><span id="cr-ing">$0</span></div>
+          <div class="calc-row"><span>${T.pkg}</span><span id="cr-pkg">$0</span></div>
+          <div class="calc-row"><span>Labor</span><span id="cr-lab">$0</span></div>
+          <div class="calc-total"><span>${T.cost}</span><span id="cr-cost">$0</span></div>
+          <div class="calc-profit"><span>${T.profUnit}</span><span id="cr-prof">$0</span></div>
+          <div class="calc-margin"><span>${T.margin}</span><span id="cr-mg">0%</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="btn-save" onclick="saveProduct()" style="flex:1;padding:10px;border-radius:10px">${T.saveProd}</button>
+          <button class="btn-cancel" onclick="clearCalc()">${T.clear}</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.margins}</div></div><div class="chart-wrap"><canvas id="ch-mg"></canvas></div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><div class="card-title">${T.catalog}</div></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Cost</th><th>Price</th><th>Profit</th><th>Margin</th><th>Units/mo</th><th></th></tr></thead><tbody id="prod-tbody"></tbody></table></div></div>
+  </div>
+
+  <div class="page" id="page-inventory">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">${T.items}</div><div class="kpi-value" id="i-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--danger)">${T.reorderNow}</div><div class="kpi-value" style="color:var(--danger)" id="i-red">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--warning)">${T.lowStockLbl}</div><div class="kpi-value" style="color:var(--warning)" id="i-low">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">${T.totalVal}</div><div class="kpi-value" id="i-val">$0</div></div>
+    </div>
+    <div class="g56">
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.stockLevels}</div></div><div id="inv-list"><div class="empty">${T.noItems}</div></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.addItem}</div></div>
+        <div class="fg"><label class="fl">${T.itemName}</label><input class="fi" id="i-name" placeholder="e.g. All-Purpose Flour"></div>
+        <div class="r2"><div class="fg"><label class="fl">Category</label><select class="fi" id="i-cat"><option>Dry Goods</option><option>Dairy</option><option>Sweeteners</option><option>Flavoring</option><option>Leavening</option><option>Packaging</option><option>Other</option></select></div>
+        <div class="fg"><label class="fl">Unit</label><select class="fi" id="i-unit"><option>kg</option><option>g</option><option>liters</option><option>dozen</option><option>pack</option><option>unit</option></select></div></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.inStock}</label><input class="fi" id="i-stock" type="number" placeholder="0"></div><div class="fg"><label class="fl">${T.minimum}</label><input class="fi" id="i-min" type="number" placeholder="0"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.unitCost}</label><input class="fi" id="i-cost" type="number" placeholder="0.00"></div><div class="fg"><label class="fl">${T.supplier}</label><input class="fi" id="i-sup" placeholder="Supplier name"></div></div>
+        <button class="btn-save" style="width:100%;padding:11px;border-radius:10px;margin-top:4px" onclick="addInv()">${T.addItemBtn}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-goals">
+    <div class="kpi-grid kpi-4">
+      <div class="kpi-card"><div class="kpi-label">${T.goalTotal}</div><div class="kpi-value" id="g-tot">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--success)">${T.onTrack}</div><div class="kpi-value" style="color:var(--success)" id="g-on">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--danger)">${T.behind}</div><div class="kpi-value" style="color:var(--danger)" id="g-beh">0</div></div>
+      <div class="kpi-card"><div class="kpi-label" style="color:var(--primary)">${T.goalDone}</div><div class="kpi-value" style="color:var(--primary)" id="g-done">0</div></div>
+    </div>
+    <div class="g56">
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.progress}</div></div><div id="goals-list"><div class="empty">${T.noGoals}</div></div></div>
+      <div class="card"><div class="card-hdr"><div class="card-title">${T.newGoal}</div></div>
+        <div class="fg"><label class="fl">${T.goalDesc}</label><input class="fi" id="g-name" placeholder="e.g. Annual Revenue"></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.target}</label><input class="fi" id="g-target" type="number" placeholder="0"></div><div class="fg"><label class="fl">${T.current}</label><input class="fi" id="g-current" type="number" placeholder="0"></div></div>
+        <div class="r2"><div class="fg"><label class="fl">${T.deadline}</label><input class="fi" id="g-dead" type="date"></div><div class="fg"><label class="fl">${T.priority}</label><select class="fi" id="g-pri"><option>${T.high}</option><option>${T.medium}</option><option>${T.low}</option></select></div></div>
+        <button class="btn-save" style="width:100%;padding:11px;border-radius:10px;margin-top:4px" onclick="addGoal()">${T.saveGoal}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-settings">
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">${T.myBiz}</div></div>
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:18px">
+          <div style="position:relative;flex-shrink:0">
+            <div id="settings-avatar" style="width:64px;height:64px;border-radius:50%;background:var(--primary-l);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;color:var(--primary);overflow:hidden;border:2px solid var(--border)">
+              <img id="settings-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover">
+              <span id="settings-avatar-ini">🧁</span>
+            </div>
+            <label for="avatar-upload" style="position:absolute;bottom:0;right:0;width:22px;height:22px;background:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,.2)">✎</label>
+            <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+          </div>
+          <div style="flex:1">
+            <div class="fl" style="margin-bottom:6px">${T.bizName}</div>
+            <input class="fi" id="set-name" placeholder="Business name" oninput="updateBizName(this.value)">
+          </div>
+        </div>
+        <div class="fg"><label class="fl">${T.language}</label><select class="fi" id="set-lang-sel" onchange="setLang(this.value)"><option value="en">🇺🇸 English</option><option value="es">🇪🇸 Español</option><option value="pt">🇧🇷 Português</option></select></div>
+        <button class="btn-save" onclick="saveSettings()" style="padding:10px 20px;border-radius:10px;font-size:13px">${T.save}</button>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><div class="card-title">Google Sheets</div></div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px">Your data syncs to a Sheet in your Drive automatically.</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn-save" onclick="openSheet()" style="padding:9px 16px;border-radius:10px;font-size:12px">Open in Drive</button>
+          <button class="btn-cancel" onclick="shareSheetId()" style="padding:9px 16px;border-radius:10px;font-size:12px;border:1px solid var(--border)">Copy ID</button>
+        </div>
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--border)">
+          <div class="fl" style="margin-bottom:8px">${T.gcalConnect}</div>
+          <div id="settings-gcal-status" style="font-size:13px;color:var(--text2);margin-bottom:10px"></div>
+          <button class="btn-cancel" onclick="disconnectGCal()" id="settings-gcal-disconnect" style="padding:9px 16px;border-radius:10px;font-size:12px;background:var(--danger-l);color:var(--danger);border:none;display:none">${T.gcalDisconnect}</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">${T.colors}</div><button class="btn-cancel" onclick="resetColors()" style="padding:6px 14px;border-radius:8px;font-size:12px;border:1px solid var(--border)">${T.reset}</button></div>
+      <div class="settings-grid">
+        <div><div class="fl" style="margin-bottom:8px">Main</div>
+          <div class="setting-row"><span class="setting-label">Primary</span><input type="color" class="clr-input" id="clr-primary" value="#D97706" oninput="setVar('--primary',this.value);updatePS(this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Success</span><input type="color" class="clr-input" value="#22C55E" oninput="setVar('--success',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Danger</span><input type="color" class="clr-input" value="#EF4444" oninput="setVar('--danger',this.value)"></div>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Backgrounds</div>
+          <div class="setting-row"><span class="setting-label">Background</span><input type="color" class="clr-input" value="#F0EDE8" oninput="setVar('--bg',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Cards</span><input type="color" class="clr-input" value="#FAFAF8" oninput="setVar('--card',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Sidebar</span><input type="color" class="clr-input" value="#FFFFFF" oninput="setVar('--sidebar',this.value)"></div>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Text</div>
+          <div class="setting-row"><span class="setting-label">Primary</span><input type="color" class="clr-input" value="#1A1814" oninput="setVar('--text',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Secondary</span><input type="color" class="clr-input" value="#6B6660" oninput="setVar('--text2',this.value)"></div>
+          <div class="setting-row"><span class="setting-label">Warning</span><input type="color" class="clr-input" value="#F59E0B" oninput="setVar('--warning',this.value)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">${T.typography}</div></div>
+      <div class="settings-grid">
+        <div><div class="fl" style="margin-bottom:8px">Font</div>
+          <select class="font-sel" onchange="setFont(this.value)"><option value="'Inter',sans-serif">Inter (default)</option><option value="'Bricolage Grotesque',sans-serif">Bricolage Grotesque</option><option value="'Instrument Serif',serif">Instrument Serif</option><option value="'Playfair Display',serif">Playfair Display</option><option value="'Georgia',serif">Georgia</option><option value="'Arial',sans-serif">Arial</option></select>
+        </div>
+        <div><div class="fl" style="margin-bottom:8px">Size</div>
+          <div class="setting-row"><span class="setting-label">Size (px)</span><input type="number" class="sz-input" value="14" min="11" max="18" oninput="setVar('--font-size',this.value+'px')"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">${T.widgets}</div></div>
+      <div class="widget-item"><div class="widget-name">Welcome Banner</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('welcome-banner',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Revenue KPI</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-revenue',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Orders KPI</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-orders-kpi',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Stock KPI</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-stock-kpi',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Balance KPI</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-balance',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Recent Activity</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-recent-section',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Charts</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-charts-section',this.checked)"><span class="toggle-slider"></span></label></div>
+      <div class="widget-item"><div class="widget-name">Expenses & Stock</div><label class="toggle"><input type="checkbox" checked onchange="toggleWidget('w-bottom-section',this.checked)"><span class="toggle-slider"></span></label></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><div class="card-title">${T.notifSettings}</div></div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px">${T.notifDesc}</p>
+      <div class="widget-item">
+        <div><div class="widget-name">${T.notifLowStock}</div><div class="widget-desc">${T.notifLowStockDesc}</div></div>
+        <label class="toggle"><input type="checkbox" id="notif-lowstock" checked onchange="toggleNotifSetting('lowStock',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="widget-item">
+        <div><div class="widget-name">${T.notifOrders}</div><div class="widget-desc">${T.notifOrdersDesc}</div></div>
+        <label class="toggle"><input type="checkbox" id="notif-orders" checked onchange="toggleNotifSetting('orders',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="widget-item">
+        <div><div class="widget-name">${T.notifTasks}</div><div class="widget-desc">${T.notifTasksDesc}</div></div>
+        <label class="toggle"><input type="checkbox" id="notif-tasks" checked onchange="toggleNotifSetting('tasks',this.checked)"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">${T.data}</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-cancel" onclick="loadSample()" style="padding:10px 16px;border-radius:10px;font-size:13px;border:1px solid var(--border)">${T.sampleData}</button>
+        <button class="btn-cancel" onclick="exportCSV()" style="padding:10px 16px;border-radius:10px;font-size:13px;border:1px solid var(--border)">${T.exportCSV}</button>
+        <button onclick="signOut()" style="background:var(--danger-l);color:var(--danger);border:none;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">${T.signoutBtn}</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Restore notification toggle states
+  var notif=DB.settings.notifications||{lowStock:true,orders:true,tasks:true};
+  var ls=document.getElementById('notif-lowstock');if(ls)ls.checked=notif.lowStock!==false;
+  var no=document.getElementById('notif-orders');if(no)no.checked=notif.orders!==false;
+  var nt=document.getElementById('notif-tasks');if(nt)nt.checked=notif.tasks!==false;
+}
+
+// ════════════════════════════════════════════════════════════
+// SHEETS API — background sync, never blocks UI
+// ════════════════════════════════════════════════════════════
+function setSS(st,tx){var p=document.getElementById('sync-pill');var t=document.getElementById('sync-text');if(p)p.className='sync-pill '+st;if(t)t.textContent=tx;}
+function shReq(method,url,body){
+  if(!accessToken||!SPREADSHEET_ID)return Promise.resolve(null);
+  setSS('syncing','...');
+  var o={method,headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'}};
+  if(body)o.body=JSON.stringify(body);
+  return fetch('https://sheets.googleapis.com/v4/spreadsheets'+url,o)
+    .then(function(r){return r.json();})
+    .then(function(d){setSS('synced',T.synced);return d;})
+    .catch(function(){setSS('error','Offline');return null;});
+}
+function initSheet(){
+  fetch('https://sheets.googleapis.com/v4/spreadsheets',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+accessToken,'Content-Type':'application/json'},
+    body:JSON.stringify({
+      properties:{title:'Bakery Manager Data'},
+      sheets:[{properties:{title:'Sales'}},{properties:{title:'Expenses'}},{properties:{title:'Orders'}},{properties:{title:'Products'}},{properties:{title:'Inventory'}},{properties:{title:'Goals'}},{properties:{title:'Clients'}}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(ns){
+    if(ns&&ns.spreadsheetId){
+      SPREADSHEET_ID=ns.spreadsheetId;
+      localStorage.setItem('bm_sheet_id',SPREADSHEET_ID);
+      var headers={
+        Sales:[['Date','Category','Product','Qty','Price','Total','Payment','Notes']],
+        Expenses:[['Date','Category','Description','Amount','Notes']],
+        Orders:[['Customer','Product','Date','DueDate','Price','Deposit','Balance','Notes','Status']],
+        Products:[['Name','IngCost','Pkg','LaborHrs','Rate','TotalCost','SalePrice','Profit','Margin','Units']],
+        Inventory:[['Name','Category','Unit','Stock','Min','Cost','Supplier']],
+        Goals:[['Goal','Target','Current','Deadline','Priority']],
+        Clients:[['Name','Email','Phone','Notes','Date Added']],
+      };
+      Object.keys(headers).forEach(function(sheet){
+        shReq('PUT','/'+SPREADSHEET_ID+'/values/'+sheet+'!A1:Z1?valueInputOption=RAW',{values:headers[sheet]});
+      });
+      setSS('synced',T.synced);
+    }
+  })
+  .catch(function(){setSS('error','Offline mode');});
+}
+function appSh(tab,vals){if(!accessToken||!SPREADSHEET_ID)return;shReq('POST','/'+SPREADSHEET_ID+'/values/'+tab+'!A:Z:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{values:[vals]});}
+function openSheet(){if(SPREADSHEET_ID)window.open('https://docs.google.com/spreadsheets/d/'+SPREADSHEET_ID,'_blank');else toast('Sheet not connected yet','err');}
+function shareSheetId(){if(!SPREADSHEET_ID){toast('No sheet connected yet','err');return;}navigator.clipboard.writeText(SPREADSHEET_ID).then(function(){toast(T.copiedId);}).catch(function(){prompt('Copy:',SPREADSHEET_ID);});}
+
+// ════════════════════════════════════════════════════════════
+// NAV & ROUTING
+// ════════════════════════════════════════════════════════════
+var pCfg={dashboard:{cta:false},sales:{cta:true,modal:'m-sale'},expenses:{cta:true,modal:'m-exp'},orders:{cta:true,modal:'m-order'},tasks:{cta:false},calendar:{cta:true,action:'addCalEvent'},clients:{cta:true,modal:'m-client'},products:{cta:false},inventory:{cta:false},goals:{cta:false},reports:{cta:false},settings:{cta:false}};
+var pageTitles={};
+
+function go(page){
+  currentPage=page;
+  pageTitles={dashboard:T.dashboard,sales:T.sales,expenses:T.expenses,orders:T.orders,products:T.products,inventory:T.inventory,goals:T.goals,settings:T.settings};
+  document.querySelectorAll('.nav-item').forEach(function(e){e.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(e){if(e.getAttribute('onclick')&&e.getAttribute('onclick').indexOf("go('"+page+"')")>-1)e.classList.add('active');});
+  document.querySelectorAll('.page').forEach(function(e){e.classList.remove('active');});
+  var pg=document.getElementById('page-'+page);if(pg)pg.classList.add('active');
+  tt('ptitle',pageTitles[page]||page);tt('mobile-title',pageTitles[page]||page);
+  var cfg=pCfg[page]||{};
+  var cb=document.getElementById('cta-btn');if(cb)cb.style.display=cfg.cta?'':'none';
+  if(page==='dashboard')loadDash();
+  if(page==='sales')loadSales();
+  if(page==='expenses')loadExpenses();
+  if(page==='orders')loadOrders();
+  if(page==='products')loadProducts();
+  if(page==='inventory')loadInventory();
+  if(page==='goals')loadGoals();
+  if(page==='tasks')loadTasks();
+  if(page==='calendar')loadCalendar();
+  if(page==='clients')loadClients();
+  if(page==='reports')loadReportsPage();
+  if(page==='settings')loadSettingsPage();
+}
+function openCTA(){var p=document.querySelector('.nav-item.active');if(!p)return;var m=p.getAttribute('onclick').match(/'(\w+)'/);if(!m)return;var cfg=pCfg[m[1]];if(!cfg)return;if(cfg.action==='addCalEvent'){openAddEventModal(document.querySelector('.cal-day-col')||document.body,{});return;}if(cfg.modal)openModal(cfg.modal);}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',function(e){if(e.target.classList&&e.target.classList.contains('modal-overlay'))e.target.classList.remove('open');});
+function showScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});if(id)document.getElementById(id).classList.add('active');}
+function toggleSidebar(){
+  var sb=document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  var btn=document.getElementById('sb-toggle-btn');
+  if(btn)btn.textContent=sb.classList.contains('collapsed')?'▶':'◀';
+}
+function openDrawer(){document.getElementById('drawer').style.display='block';}
+function closeDrawer(){document.getElementById('drawer').style.display='none';}
+
+// ════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════
+function $n(n){return '$'+(parseFloat(n)||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function $d(n){return '$'+(parseFloat(n)||0).toFixed(2);}
+function v(id){var e=document.getElementById(id);return e?e.value:'';}
+function pf(id){return parseFloat(v(id))||0;}
+function set(id,val){var e=document.getElementById(id);if(e)e.textContent=val;}
+function clr(ids){ids.forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});}
+function today(){return new Date().toISOString().split('T')[0];}
+function toast(msg,type){var t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'ok')+' show';setTimeout(function(){t.classList.remove('show');},2600);}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+function loadDash(){
+  renderDashboardAlerts();
+  var sales=DB.sales,expenses=DB.expenses,orders=DB.orders,inv=DB.inventory;
+  var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();
+  var totalRev=0,monthly={},cats={},expCats={};
+  sales.forEach(function(r){var a=parseFloat(r.total)||0;totalRev+=a;var d=new Date(r.date);if(!isNaN(d)){var k=d.getFullYear()+'-'+d.getMonth();monthly[k]=(monthly[k]||0)+a;}cats[r.category]=(cats[r.category]||0)+a;});
+  expenses.forEach(function(r){expCats[r.category]=(expCats[r.category]||0)+(parseFloat(r.amount)||0);});
+  var pending=orders.filter(function(o){return o.status!=='Completed';});
+  var balDue=pending.reduce(function(ss,o){return ss+(parseFloat(o.balance)||0);},0);
+  var reorder=inv.filter(function(i){return parseFloat(i.stock)<=parseFloat(i.min);});
+  set('d-rev',$n(totalRev));set('d-orders-cnt',pending.length);set('d-stock',reorder.length);set('d-balance',$n(balDue));
+  var uname=(currentUser&&currentUser.name)||'there';
+  var wt=document.getElementById('welcome-text');if(wt)wt.textContent='Hello, '+uname.split(' ')[0]+'! 👋';
+  var ws=document.getElementById('welcome-sub');if(ws)ws.textContent="Here's your bakery overview — "+new Date().toLocaleDateString('en',{weekday:'long',day:'numeric',month:'long'});
+  var colors=['#D97706','#22C55E','#EF4444','#F59E0B','#EC4899'];
+  var recEl=document.getElementById('d-recent');
+  if(recEl){var recent=sales.slice(-5).reverse();if(!recent.length){recEl.innerHTML='<div class="empty">'+T.noSales+'</div>';}else{recEl.innerHTML=recent.map(function(r){var ci=(r.product||'').charCodeAt(0)%colors.length;var ini=(r.product||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();return '<div class="list-row"><div class="list-av" style="background:'+colors[ci]+'22;color:'+colors[ci]+'">'+ini+'</div><div><div class="list-name">'+r.product+'</div><div class="list-sub">'+r.category+' · '+r.date+'</div></div><div class="list-r"><div class="list-amount">'+$d(r.total)+'</div></div></div>';}).join('');}}
+  var pendEl=document.getElementById('d-pending');
+  if(pendEl){if(!pending.length){pendEl.innerHTML='<div class="empty">'+T.noPending+'</div>';}else{pendEl.innerHTML=pending.slice(0,4).map(function(o){var ini=(o.customer||'?').split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();var ov=o.dueDate&&new Date(o.dueDate)<new Date();return '<div class="list-row"><div class="list-av" style="background:var(--primary-l);color:var(--primary)">'+ini+'</div><div><div class="list-name">'+o.customer+'</div><div class="list-sub">'+o.product+'</div></div><div class="list-r"><div class="list-amount">'+$d(o.balance)+'</div><div class="list-status" style="color:'+(ov?'var(--danger)':'var(--warning)')+'"> '+(ov?'OVERDUE':'PEND.')+'</div></div></div>';}).join('');}}
+  var m6=[];for(var i=5;i>=0;i--){var d2=new Date(thisY,thisM-i,1);m6.push({label:T.mn[d2.getMonth()],rev:monthly[d2.getFullYear()+'-'+d2.getMonth()]||0});}
+  renderRevChart(m6);renderCatChart(cats);
+  var expEl=document.getElementById('d-exp-cats');
+  if(expEl){var te=Object.values(expCats).reduce(function(a,b){return a+b;},0)||1;if(!Object.keys(expCats).length){expEl.innerHTML='<div class="empty">—</div>';}else{expEl.innerHTML=Object.entries(expCats).sort(function(a,b){return b[1]-a[1];}).slice(0,5).map(function(e){var pct=Math.round(e[1]/te*100);return '<div class="prog-row"><div class="prog-hdr"><span class="prog-label">'+e[0]+'</span><span class="prog-pct">'+$n(e[1])+'</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%"></div></div></div>';}).join('');}}
+  var stEl=document.getElementById('d-stock-list');
+  if(stEl){var crit=inv.filter(function(i){return parseFloat(i.stock)<=parseFloat(i.min)*1.5;}).slice(0,5);if(!crit.length){stEl.innerHTML='<div style="text-align:center;padding:24px;color:rgba(255,255,255,.3);font-size:13px">'+T.stockOk+'</div>';}else{stEl.innerHTML=crit.map(function(item){var st=parseFloat(item.stock)<=parseFloat(item.min)?'🔴':'🟡';return '<div class="stock-row"><div><div style="font-size:13px;font-weight:600;color:white">'+item.name+'</div><div style="font-size:11px;color:rgba(255,255,255,.4)">'+item.category+'</div></div><div style="display:flex;align-items:center;gap:8px"><span style="font-size:14px;font-weight:700;color:white">'+item.stock+' '+item.unit+'</span><span>'+st+'</span></div></div>';}).join('');}}
+  var badge=document.getElementById('orders-badge');
+  if(badge){if(pending.length){badge.style.display='';badge.textContent=pending.length;}else{badge.style.display='none';}}
+
+  var tpending=(DB.tasks||[]).filter(function(t){return !t.done;});
+  var tbadge=document.getElementById('tasks-badge');
+  if(tbadge){if(tpending.length){tbadge.style.display='';tbadge.textContent=tpending.length;}else{tbadge.style.display='none';}}
+}
+
+function renderRevChart(months){var ctx=document.getElementById('ch-rev');if(!ctx)return;if(CH.rev)CH.rev.destroy();var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#D97706';CH.rev=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:months.map(function(m){return m.label;}),datasets:[{data:months.map(function(m){return m.rev;}),backgroundColor:c+'33',borderColor:c,borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:function(v){return '$'+v.toLocaleString();},font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});}
+function renderCatChart(cats){var ctx=document.getElementById('ch-cat');if(!ctx)return;if(CH.cat)CH.cat.destroy();var labels=Object.keys(cats),vals=Object.values(cats);if(!labels.length)return;var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#D97706';var colors=[c,'#22C55E','#EF4444','#F59E0B','#EC4899','#06B6D4','#A855F7','#84CC16'];CH.cat=new Chart(ctx.getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:10},padding:10,boxWidth:10}}}}});}
+
+// ════════════════════════════════════════════════════════════
+// SALES
+// ════════════════════════════════════════════════════════════
+function loadSales(){var rows=DB.sales,total=0,cats={};rows.forEach(function(r){total+=parseFloat(r.total)||0;cats[r.category]=(cats[r.category]||0)+(parseFloat(r.total)||0);});var avg=rows.length?total/rows.length:0;var best=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'—';set('s-rev',$n(total));set('s-cnt',rows.length);set('s-avg',$n(avg));set('s-best',best);var tbody=document.getElementById('sales-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">'+T.noSales+'</div></td></tr>';return;}tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;return '<tr><td class="td-muted">'+r.date+'</td><td><span class="badge b-primary">'+r.category+'</span></td><td class="td-name">'+r.product+'</td><td class="td-muted">'+r.qty+'</td><td class="td-money">'+$d(r.total)+'</td><td class="td-muted">'+r.payment+'</td><td><button class="ibtn" onclick="del(\'sales\','+ri+')">✕</button></td></tr>';}).join('');}
+function saveSale(){var d={date:v('ms-date'),category:v('ms-cat'),product:v('ms-prod'),qty:v('ms-qty')||1,price:pf('ms-price'),payment:v('ms-pay'),notes:v('ms-notes')};if(!d.product||!d.price){toast(T.fillRequired,'err');return;}d.total=((parseFloat(d.qty)||1)*d.price).toFixed(2);DB.sales.push(d);saveDB('sales');appSh('Sales',[d.date,d.category,d.product,d.qty,d.price,d.total,d.payment,d.notes]);toast(T.saleSaved);closeModal('m-sale');clr(['ms-prod','ms-price','ms-notes']);document.getElementById('ms-qty').value='1';loadSales();loadDash();}
+
+// ════════════════════════════════════════════════════════════
+// EXPENSES
+// ════════════════════════════════════════════════════════════
+function loadExpenses(){var rows=DB.expenses,total=0,mt=0,cats={};var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();rows.forEach(function(r){var a=parseFloat(r.amount)||0;total+=a;cats[r.category]=(cats[r.category]||0)+a;var d=new Date(r.date);if(!isNaN(d)&&d.getMonth()===thisM&&d.getFullYear()===thisY)mt+=a;});var big=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'—';set('e-tot',$n(total));set('e-month',$n(mt));set('e-big',big);var tbody=document.getElementById('exp-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">—</div></td></tr>';return;}tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;return '<tr><td class="td-muted">'+r.date+'</td><td><span class="badge b-danger">'+r.category+'</span></td><td class="td-name">'+r.description+'</td><td class="td-neg td-money">'+$d(r.amount)+'</td><td><button class="ibtn" onclick="del(\'expenses\','+ri+')">✕</button></td></tr>';}).join('');}
+function saveExpense(){var d={date:v('me-date'),category:v('me-cat'),description:v('me-desc'),amount:pf('me-amt')};if(!d.description||!d.amount){toast(T.fillRequired,'err');return;}DB.expenses.push(d);saveDB('expenses');appSh('Expenses',[d.date,d.category,d.description,d.amount,'']);toast(T.expSaved);closeModal('m-exp');clr(['me-desc']);document.getElementById('me-amt').value='';loadExpenses();loadDash();}
+
+// ════════════════════════════════════════════════════════════
+// ORDERS
+// ════════════════════════════════════════════════════════════
+function loadOrders(){var rows=DB.orders,pend=0,comp=0,bal=0;rows.forEach(function(r){if(r.status==='Completed')comp++;else{pend++;bal+=parseFloat(r.balance)||0;}});set('o-tot',rows.length);set('o-pend',pend);set('o-comp',comp);set('o-bal',$n(bal));var tbody=document.getElementById('ord-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="9"><div class="empty">—</div></td></tr>';return;}var sc={Completed:'b-success','In Progress':'b-primary',Pending:'b-warning'};tbody.innerHTML=rows.slice().reverse().map(function(r,i){var ri=rows.length-1-i;var st=r.status||'Pending';return '<tr><td class="td-muted" style="font-size:11px">#'+String(ri+1).padStart(4,'0')+'</td><td class="td-name">'+r.customer+'</td><td class="td-muted">'+r.product+'</td><td class="td-money">'+$d(r.price)+'</td><td class="td-muted">'+$d(r.deposit)+'</td><td class="td-neg td-money">'+$d(r.balance)+'</td><td class="td-muted">'+r.dueDate+'</td><td><span class="badge '+(sc[st]||'b-gray')+'">'+st+'</span></td><td style="display:flex;gap:4px"><button class="ibtn ok" onclick="completeOrd('+ri+')">✓</button><button class="ibtn" onclick="del(\'orders\','+ri+')">✕</button></td></tr>';}).join('');var badge=document.getElementById('orders-badge');if(badge){if(pend){badge.style.display='';badge.textContent=pend;}else{badge.style.display='none';}}}
+function saveOrder(){var price=pf('mo-price'),dep=pf('mo-dep');var d={customer:v('mo-cust'),product:v('mo-prod'),date:v('mo-date'),dueDate:v('mo-due'),price,deposit:dep,balance:(price-dep).toFixed(2),notes:v('mo-notes'),status:'Pending'};if(!d.customer||!d.product){toast(T.fillRequired,'err');return;}DB.orders.push(d);saveDB('orders');appSh('Orders',[d.customer,d.product,d.date,d.dueDate,d.price,d.deposit,d.balance,d.notes,d.status]);syncOrderToGcal(DB.orders.length-1);toast(T.orderSaved);closeModal('m-order');clr(['mo-cust','mo-prod','mo-price','mo-dep','mo-notes']);loadOrders();loadDash();}
+function completeOrd(i){if(!DB.orders[i])return;DB.orders[i].status='Completed';DB.orders[i].balance='0.00';saveDB('orders');syncOrderToGcal(i);toast(T.orderCompleted);loadOrders();loadDash();}
+
+// ════════════════════════════════════════════════════════════
+// PRODUCTS
+// ════════════════════════════════════════════════════════════
+function calcM(){var ing=pf('c-ing'),pkg=pf('c-pkg'),hrs=pf('c-hrs'),rate=pf('c-rate'),price=pf('c-price');var labor=hrs*rate,cost=ing+pkg+labor,profit=price-cost,mg=price>0?(profit/price*100).toFixed(1):0;set('cr-ing','$'+ing.toFixed(2));set('cr-pkg','$'+pkg.toFixed(2));set('cr-lab','$'+labor.toFixed(2));set('cr-cost','$'+cost.toFixed(2));set('cr-prof','$'+profit.toFixed(2));set('cr-mg',mg+'%');var co=document.getElementById('calc-out');if(co)co.classList.toggle('show',price>0);}
+function clearCalc(){['c-name','c-ing','c-pkg','c-hrs','c-rate','c-price','c-units'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});var co=document.getElementById('calc-out');if(co)co.classList.remove('show');}
+function saveProduct(){var name=v('c-name'),ing=pf('c-ing'),pkg=pf('c-pkg'),hrs=pf('c-hrs'),rate=pf('c-rate'),price=pf('c-price'),units=pf('c-units');if(!name){toast(T.fillRequired,'err');return;}var cost=ing+pkg+(hrs*rate),profit=price-cost,margin=price>0?(profit/price*100).toFixed(1):0;var d={name,ingredientCost:ing,packaging:pkg,laborHrs:hrs,rate,totalCost:cost.toFixed(2),salePrice:price,profit:profit.toFixed(2),margin:margin+'%',unitsPerMonth:units};DB.products.push(d);saveDB('products');appSh('Products',[d.name,ing,pkg,hrs,rate,d.totalCost,price,d.profit,d.margin,units]);toast(T.prodSaved);clearCalc();loadProducts();}
+function loadProducts(){var rows=DB.products;var tbody=document.getElementById('prod-tbody');if(!tbody)return;if(!rows.length){tbody.innerHTML='<tr><td colspan="7"><div class="empty">—</div></td></tr>';renderMgChart([]);return;}tbody.innerHTML=rows.map(function(r,i){var mg=parseFloat(r.margin)||0;var mc=mg>=50?'td-pos':mg>=30?'td-money':'td-neg';return '<tr><td class="td-name">'+r.name+'</td><td class="td-muted">$'+parseFloat(r.totalCost).toFixed(2)+'</td><td class="td-money">$'+parseFloat(r.salePrice).toFixed(2)+'</td><td class="td-pos">$'+parseFloat(r.profit).toFixed(2)+'</td><td class="'+mc+'" style="font-size:15px;font-weight:700">'+r.margin+'</td><td class="td-muted">'+r.unitsPerMonth+'</td><td><button class="ibtn" onclick="del(\'products\','+i+')">✕</button></td></tr>';}).join('');renderMgChart(rows);}
+function renderMgChart(rows){var ctx=document.getElementById('ch-mg');if(!ctx)return;if(CH.mg)CH.mg.destroy();if(!rows.length)return;var c=getComputedStyle(document.documentElement).getPropertyValue('--primary').trim()||'#D97706';CH.mg=new Chart(ctx.getContext('2d'),{type:'bar',data:{labels:rows.map(function(r){return r.name.split(' ').slice(0,2).join(' ');}),datasets:[{data:rows.map(function(r){return parseFloat(r.margin)||0;}),backgroundColor:rows.map(function(r){var m=parseFloat(r.margin)||0;return m>=50?'#22C55E88':m>=30?c+'88':'#EF444488';}),borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:function(v){return v+'%';},font:{size:10}},max:100},y:{grid:{display:false},ticks:{font:{size:10}}}}}});}
+
+// ════════════════════════════════════════════════════════════
+// INVENTORY
+// ════════════════════════════════════════════════════════════
+function addInv(){var name=v('i-name'),stock=pf('i-stock'),min=pf('i-min'),cost=pf('i-cost');if(!name||!stock){toast(T.fillRequired,'err');return;}var d={name,category:v('i-cat'),unit:v('i-unit'),stock,min,cost,supplier:v('i-sup')};DB.inventory.push(d);saveDB('inventory');appSh('Inventory',[d.name,d.category,d.unit,stock,min,cost,d.supplier]);toast(T.itemSaved);clr(['i-name','i-stock','i-min','i-cost','i-sup']);loadInventory();}
+function loadInventory(){var rows=DB.inventory,red=0,low=0,val=0;rows.forEach(function(r){var ss=parseFloat(r.stock)||0,m=parseFloat(r.min)||0,c=parseFloat(r.cost)||0;val+=ss*c;if(ss<=m)red++;else if(ss<=m*1.5)low++;});set('i-tot',rows.length);set('i-red',red);set('i-low',low);set('i-val',$n(val));var el=document.getElementById('inv-list');if(!el)return;if(!rows.length){el.innerHTML='<div class="empty">'+T.noItems+'</div>';return;}el.innerHTML=rows.map(function(r,i){var ss=parseFloat(r.stock)||0,m=parseFloat(r.min)||0;var st,sc;if(ss<=m){st='🔴 Reorder';sc='b-danger';}else if(ss<=m*1.5){st='🟡 Low';sc='b-warning';}else{st='🟢 OK';sc='b-success';}return '<div class="list-row"><div style="flex:1"><div class="list-name">'+r.name+'</div><div class="list-sub">'+r.category+'</div></div><div style="display:flex;align-items:center;gap:10px"><span style="font-weight:700">'+ss+' <span style="font-size:11px;color:var(--text3)">'+r.unit+'</span></span><span class="badge '+sc+'">'+st+'</span><button class="ibtn" onclick="del(\'inventory\','+i+')">✕</button></div></div>';}).join('');}
+
+// ════════════════════════════════════════════════════════════
+// GOALS
+// ════════════════════════════════════════════════════════════
+function addGoal(){var name=v('g-name'),target=pf('g-target'),current=pf('g-current');if(!name||!target){toast(T.fillRequired,'err');return;}var d={goal:name,target,current,deadline:v('g-dead'),priority:v('g-pri')};DB.goals.push(d);saveDB('goals');appSh('Goals',[d.goal,target,current,d.deadline,d.priority]);toast(T.goalSaved);clr(['g-name','g-target','g-current']);loadGoals();}
+function loadGoals(){var rows=DB.goals,on=0,beh=0,done=0;rows.forEach(function(r){var p=r.target>0?r.current/r.target:0;if(p>=1)done++;else if(p>=0.5)on++;else beh++;});set('g-tot',rows.length);set('g-on',on);set('g-beh',beh);set('g-done',done);var el=document.getElementById('goals-list');if(!el)return;if(!rows.length){el.innerHTML='<div class="empty">'+T.noGoals+'</div>';return;}el.innerHTML=rows.map(function(r,i){var pct=r.target>0?Math.min(r.current/r.target*100,100):0;var fc=pct>=75?'var(--success)':pct>=40?'var(--primary)':'var(--danger)';return '<div class="prog-row"><div class="prog-hdr"><span class="prog-label">'+r.goal+'</span><div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:700;color:'+fc+'">'+Math.round(pct)+'%</span><button class="ibtn" onclick="del(\'goals\','+i+')">✕</button></div></div><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+fc+'"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:4px"><span>'+r.current.toLocaleString()+'</span><span>'+r.target.toLocaleString()+'</span></div></div>';}).join('');}
+
+// ════════════════════════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════════════════════════
+function setVar(prop,val){document.documentElement.style.setProperty(prop,val);saveTheme();}
+function updatePS(hex){var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);document.documentElement.style.setProperty('--primary-l','rgba('+r+','+g+','+b+',.15)');document.documentElement.style.setProperty('--primary-d','rgb('+Math.max(0,r-28)+','+Math.max(0,g-28)+','+Math.max(0,b-28)+')');saveTheme();}
+function setFont(val){document.documentElement.style.setProperty('--font',val);saveTheme();}
+function resetColors(){
+  DB.theme={};saveDB('theme');
+  // Re-apply CSS defaults by removing inline styles
+  var props=['--primary','--primary-l','--primary-d','--success','--success-l','--danger','--danger-l','--bg','--card','--sidebar','--text','--text2','--text3','--border','--warning','--warning-l'];
+  props.forEach(function(k){document.documentElement.style.removeProperty(k);});
+  toast(T.saved);
+}
+function saveTheme(){var props=['--primary','--success','--danger','--bg','--card','--sidebar','--text','--text2','--warning','--font','--font-size'];var t={};props.forEach(function(k){t[k]=getComputedStyle(document.documentElement).getPropertyValue(k).trim();});DB.theme=t;saveDB('theme');}
+function applyTheme(){
+  var t=DB.theme||{};
+  // Only allow overriding primary color — never touch bg/card/sidebar/text
+  var locked=['--bg','--card','--sidebar','--text','--text2','--text3','--border','--shadow','--shadow-md','--shadow-lg','--r','--r-sm','--r-xs'];
+  Object.keys(t).forEach(function(k){
+    if(locked.indexOf(k)===-1)document.documentElement.style.setProperty(k,t[k]);
+  });
+}
+function toggleWidget(id,show){var el=document.getElementById(id);if(el)el.style.display=show?'':'none';DB.widgets[id]=show;saveDB('widgets');}
+function applyWidgets(){Object.keys(DB.widgets).forEach(function(id){var el=document.getElementById(id);if(el)el.style.display=DB.widgets[id]?'':'none';});}
+function loadSettingsPage(){
+  var sn=document.getElementById('set-name');if(sn)sn.value=DB.settings.name||'';
+  var sl=document.getElementById('set-lang-sel');if(sl)sl.value=lang;
+  // Restore avatar preview
+  if(DB.settings.avatar){
+    var img=document.getElementById('settings-avatar-img');
+    var ini=document.getElementById('settings-avatar-ini');
+    if(img){img.src=DB.settings.avatar;img.style.display='';}
+    if(ini)ini.style.display='none';
+  }
+  // Restore notification toggles
+  var notif=DB.settings.notifications||{lowStock:true,orders:true,tasks:true};
+  var ls=document.getElementById('notif-lowstock');if(ls)ls.checked=notif.lowStock!==false;
+  var no=document.getElementById('notif-orders');if(no)no.checked=notif.orders!==false;
+  var nt=document.getElementById('notif-tasks');if(nt)nt.checked=notif.tasks!==false;
+}
+function saveSettings(){
+  DB.settings.name=v('set-name')||'';
+  saveDB('settings');
+  updateBizName(DB.settings.name);
+  toast(T.saved);
+}
+function uploadAvatar(input){
+  if(!input.files||!input.files[0])return;
+  var file=input.files[0];
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    DB.settings.avatar=dataUrl;
+    saveDB('settings');
+    applyAvatar(dataUrl);
+    toast('Profile picture updated ✓');
+  };
+  reader.readAsDataURL(file);
+}
+function applyAvatar(dataUrl){
+  // Settings page preview
+  var img=document.getElementById('settings-avatar-img');
+  var ini=document.getElementById('settings-avatar-ini');
+  if(img){img.src=dataUrl;img.style.display='';}
+  if(ini)ini.style.display='none';
+  // Sidebar user pic
+  ['user-pic','drawer-user-pic'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.src=dataUrl;el.style.display='';}
+  });
+  ['user-ph','drawer-user-ph'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.style.display='none';
+  });
+}
+function updateBizName(name){if(!name)return;tt('sb-biz-name',name);tt('drawer-biz-name',name);}
+
+// ════════════════════════════════════════════════════════════
+// MISC
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// TASKS (To-Do List)
+// ════════════════════════════════════════════════════════════
+function addTask(){
+  var name=v('tk-name'),due=v('tk-due'),pri=v('tk-pri');
+  if(!name){toast(T.fillRequired,'err');return;}
+  var d={name,due,priority:pri,done:false,createdAt:today()};
+  DB.tasks=DB.tasks||[];
+  DB.tasks.push(d);saveDB('tasks');
+  syncTaskToGcal(DB.tasks.length-1);
+  toast(T.taskSaved);clr(['tk-name','tk-due']);
+  loadTasks();
+}
+function loadTasks(){
+  var rows=DB.tasks||[];
+  var pending=rows.filter(function(t){return !t.done;});
+  var done=rows.filter(function(t){return t.done;});
+  set('tk-tot',rows.length);set('tk-pend',pending.length);set('tk-done',done.length);
+  var el=document.getElementById('tasks-list');if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty">'+T.noTasks+'</div>';return;}
+  var priColor={};priColor[T.high]='b-danger';priColor[T.medium]='b-warning';priColor[T.low]='b-success';
+  // sort: pending first (by due date), then done
+  var sorted=rows.slice().sort(function(a,b){
+    if(a.done!==b.done)return a.done?1:-1;
+    return (a.due||'9999').localeCompare(b.due||'9999');
+  });
+  el.innerHTML=sorted.map(function(t){
+    var i=rows.indexOf(t);
+    var overdue=t.due&&!t.done&&new Date(t.due)<new Date(new Date().toDateString());
+    return '<div class="list-row" style="'+(t.done?'opacity:.5':'')+'">'+
+      '<div class="checkbox-row" onclick="toggleTask('+i+')" style="cursor:pointer;width:22px;height:22px;border-radius:6px;border:2px solid '+(t.done?'var(--success)':'var(--border)')+';background:'+(t.done?'var(--success)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(t.done?'<span style="color:white;font-size:12px">✓</span>':'')+'</div>'+
+      '<div style="flex:1"><div class="list-name" style="'+(t.done?'text-decoration:line-through':'')+'">'+t.name+'</div>'+
+      (t.due?'<div class="list-sub" style="color:'+(overdue?'var(--danger)':'var(--text3)')+'">'+(overdue?'⚠ ':'')+t.due+'</div>':'')+'</div>'+
+      '<span class="badge '+(priColor[t.priority]||'b-gray')+'">'+t.priority+'</span>'+
+      '<button class="ibtn" onclick="del(\'tasks\','+i+')">✕</button>'+
+    '</div>';
+  }).join('');
+}
+function toggleTask(i){
+  DB.tasks[i].done=!DB.tasks[i].done;
+  saveDB('tasks');
+  syncTaskToGcal(i);
+  if(DB.tasks[i].done)toast(T.taskDoneMsg);
+  loadTasks();
+}
+
+
+// ════════════════════════════════════════════════════════════
+// CALENDAR — Day/Week/Month views, Google Calendar two-way sync
+// ════════════════════════════════════════════════════════════
+var calViewDate=new Date();
+var calViewMode=localStorage.getItem('bm_cal_view')||'week';
+var gcalEvents=[];
+var gcalConnected=localStorage.getItem('bm_gcal_connected')==='1';
+var gcalAccessToken=localStorage.getItem('bm_gcal_token')||'';
+var gcalRefreshTimer=null;
+
+function loadCalendar(){
+  setCalView(calViewMode);
+  if(gcalConnected&&gcalAccessToken){
+    fetchGCalEvents();
+    startGcalAutoRefresh();
+  } else if(gcalConnected&&!gcalAccessToken){
+    // We think we're connected but lost the token (e.g. after reload) — silently reconnect
+    silentReconnectGCal();
+  }
+  renderGcalUI();
+}
+
+function startGcalAutoRefresh(){
+  if(gcalRefreshTimer)clearInterval(gcalRefreshTimer);
+  gcalRefreshTimer=setInterval(function(){
+    if(gcalConnected&&gcalAccessToken)fetchGCalEvents();
+  },60000); // refresh every 60 seconds
+}
+
+function setCalView(mode){
+  calViewMode=mode;
+  localStorage.setItem('bm_cal_view',mode);
+  document.querySelectorAll('.cal-view-btn').forEach(function(b){
+    b.classList.toggle('active',b.getAttribute('data-view')===mode);
+  });
+  renderCalGrid();
+}
+
+function calPrev(){
+  if(calViewMode==='month')calViewDate.setMonth(calViewDate.getMonth()-1);
+  else if(calViewMode==='week')calViewDate.setDate(calViewDate.getDate()-7);
+  else calViewDate.setDate(calViewDate.getDate()-1);
+  renderCalGrid();
+}
+function calNext(){
+  if(calViewMode==='month')calViewDate.setMonth(calViewDate.getMonth()+1);
+  else if(calViewMode==='week')calViewDate.setDate(calViewDate.getDate()+7);
+  else calViewDate.setDate(calViewDate.getDate()+1);
+  renderCalGrid();
+}
+function calToday(){calViewDate=new Date();renderCalGrid();}
+
+function getAllEventsForDate(dateStr){
+  var evts=[];
+  (DB.orders||[]).forEach(function(o){
+    if(o.dueDate===dateStr)evts.push({type:'order',label:o.customer+' — '+o.product,start:dateStr,end:null,gcalId:null});
+  });
+  (DB.tasks||[]).forEach(function(t){
+    if(t.due===dateStr&&!t.done)evts.push({type:'task',label:t.name,start:dateStr,end:null,gcalId:null});
+  });
+  gcalEvents.forEach(function(e){
+    var d=e.start?e.start.split('T')[0]:null;
+    if(d===dateStr){
+      evts.push({type:'gcal',label:e.summary,start:e.start,end:e.end,gcalId:e.id,time:e.start&&e.start.indexOf('T')>-1?e.start.split('T')[1].slice(0,5):null});
+    }
+  });
+  return evts;
+}
+
+var EVT_COLORS={order:'var(--primary)',task:'var(--warning)',gcal:'var(--success)'};
+var EVT_BG={order:'var(--primary-l)',task:'var(--warning-l)',gcal:'var(--success-l)'};
+
+function renderCalGrid(){
+  if(calViewMode==='month')renderMonthView();
+  else if(calViewMode==='week')renderWeekView();
+  else renderDayView();
+}
+
+function fmtDateStr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+function renderMonthView(){
+  var y=calViewDate.getFullYear(),m=calViewDate.getMonth();
+  set('cal-title',T.mn[m]+' '+y);
+  var firstDay=new Date(y,m,1).getDay();
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var todayStr=today();
+
+  var dw=T.dw;
+  var html='<div class="cal-month-grid">';
+  html+='<div class="cal-month-headers">';
+  dw.forEach(function(d){html+='<div class="cal-month-dh">'+d+'</div>';});
+  html+='</div><div class="cal-month-body">';
+
+  var prevMonthDays=new Date(y,m,0).getDate();
+  for(var i=firstDay-1;i>=0;i--){
+    html+='<div class="cal-month-cell other-month"><div class="cal-day-num">'+(prevMonthDays-i)+'</div></div>';
+  }
+  for(var day=1;day<=daysInMonth;day++){
+    var dateStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    var isToday=dateStr===todayStr;
+    var evts=getAllEventsForDate(dateStr);
+    html+='<div class="cal-month-cell" onclick="openDayFromMonth(\''+dateStr+'\')">'+
+      '<div class="cal-day-num'+(isToday?' today':'')+'">'+day+'</div>'+
+      '<div class="cal-month-events">'+
+      evts.slice(0,3).map(function(e){
+        return '<div class="cal-mini-event" style="background:'+EVT_BG[e.type]+';color:'+EVT_COLORS[e.type]+'">'+(e.time?e.time+' ':'')+e.label+'</div>';
+      }).join('')+
+      (evts.length>3?'<div class="cal-mini-more">+'+(evts.length-3)+' more</div>':'')+
+      '</div>'+
+    '</div>';
+  }
+  var totalCells=firstDay+daysInMonth;
+  var remaining=(7-(totalCells%7))%7;
+  for(var n=1;n<=remaining;n++){
+    html+='<div class="cal-month-cell other-month"><div class="cal-day-num">'+n+'</div></div>';
+  }
+  html+='</div></div>';
+  var grid=document.getElementById('cal-grid');if(grid)grid.innerHTML=html;
+}
+
+function openDayFromMonth(dateStr){
+  calViewDate=new Date(dateStr+'T00:00:00');
+  setCalView('day');
+}
+
+// ── CALENDAR HELPERS ─────────────────────────────────────────
+var HOUR_H=60;
+function formatHour(h){if(h===0)return '12 AM';if(h<12)return h+' AM';if(h===12)return '12 PM';return (h-12)+' PM';}
+function timeToMin(t){if(!t)return 0;var p=t.split(':');return parseInt(p[0])*60+(parseInt(p[1])||0);}
+function getEventMinutes(e){
+  var startMin=0,endMin=60;
+  if(e.start&&e.start.indexOf('T')>-1){var d=new Date(e.start);startMin=d.getHours()*60+d.getMinutes();}
+  else if(e.time)startMin=timeToMin(e.time);
+  if(e.end&&e.end.indexOf('T')>-1){var d2=new Date(e.end);endMin=d2.getHours()*60+d2.getMinutes();}
+  else endMin=startMin+60;
+  if(endMin<=startMin)endMin=startMin+60;
+  return {start:startMin,end:endMin};
+}
+function isAllDay(e){
+  return !e.time&&(!e.start||e.start.indexOf('T')<0);
+}
+function buildTimedBlocks(evts){
+  return evts.map(function(e){
+    var m=getEventMinutes(e);
+    var top=(m.start/60)*HOUR_H;
+    var height=Math.max(((m.end-m.start)/60)*HOUR_H,20);
+    var color=EVT_COLORS[e.type]||'var(--primary)';
+    var bg=EVT_BG[e.type]||'var(--primary-l)';
+    var startStr=formatHour(Math.floor(m.start/60))+(m.start%60?':'+String(m.start%60).padStart(2,'0'):'');
+    var endStr=formatHour(Math.floor(m.end/60))+(m.end%60?':'+String(m.end%60).padStart(2,'0'):'');
+    var safeLabel=(e.label||'').replace(/'/g,'&apos;').replace(/"/g,'&quot;');
+    var gcalId=e.gcalId||'';
+    return '<div class="cal-evt-block" '+
+      'style="top:'+top+'px;height:'+height+'px;background:'+bg+';border-left:3px solid '+color+';color:'+color+'" '+
+      'onclick="event.stopPropagation();openEventDetail(this)" data-label="'+safeLabel+'" data-gcalid="'+gcalId+'" data-type="'+e.type+'"'+
+    '>'+
+      '<div style="font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e.label+'</div>'+
+      (height>26?'<div style="font-size:10px;opacity:.75">'+startStr+' – '+endStr+'</div>':'')+
+    '</div>';
+  }).join('');
+}
+
+function renderWeekView(){
+  var isMobile=window.innerWidth<768;
+  var numDays=isMobile?3:7;
+  var dow=calViewDate.getDay();
+  var weekStart=new Date(calViewDate);
+  if(isMobile){weekStart=new Date(calViewDate);} // start from current day on mobile
+  else{weekStart.setDate(calViewDate.getDate()-dow);}
+  var weekEnd=new Date(weekStart);weekEnd.setDate(weekStart.getDate()+(numDays-1));
+  set('cal-title',weekStart.toLocaleDateString(lang,{month:'short',day:'numeric'})+' – '+weekEnd.toLocaleDateString(lang,{month:'short',day:'numeric',year:'numeric'}));
+  var todayStr=today(),dw=T.dw,days=[];
+  for(var i=0;i<numDays;i++){var dd=new Date(weekStart);dd.setDate(weekStart.getDate()+i);days.push(dd);}
+
+  var html='<div class="cal-week-grid">';
+  // Headers
+  html+='<div class="cal-week-headers"><div class="cal-week-gutter"></div>';
+  days.forEach(function(dd,i){
+    var dstr=fmtDateStr(dd),isToday=dstr===todayStr;
+    html+='<div class="cal-week-dh'+(isToday?' today':'')+'"><div class="cal-week-dh-name">'+dw[i]+'</div><div class="cal-week-dh-num'+(isToday?' today-num':'')+'">'+dd.getDate()+'</div></div>';
+  });
+  html+='</div>';
+
+  // All-day row
+  html+='<div class="cal-week-allday"><div class="cal-week-gutter" style="font-size:9px;color:var(--text3);text-align:center;padding-top:6px">all<br>day</div>';
+  days.forEach(function(dd){
+    var dstr=fmtDateStr(dd);
+    var evts=getAllEventsForDate(dstr).filter(isAllDay);
+    html+='<div class="cal-week-allday-cell">'+evts.map(function(e){
+      var safeLabel=(e.label||'').replace(/'/g,'&apos;');
+      return '<div class="cal-mini-event" style="background:'+EVT_BG[e.type]+';color:'+EVT_COLORS[e.type]+'" '+
+        'onclick="event.stopPropagation();openEventDetail(this)" data-label="'+safeLabel+'" data-gcalid="" data-type="'+e.type+'">'+(e.label||'')+'</div>';
+    }).join('')+'</div>';
+  });
+  html+='</div>';
+
+  // Time grid — absolute positioning
+  html+='<div class="cal-week-scroll"><div class="cal-week-timegrid">';
+  // Hour lines column
+  html+='<div class="cal-timecol">';
+  for(var h=0;h<24;h++)html+='<div class="cal-hour-lbl">'+formatHour(h)+'</div>';
+  html+='</div>';
+  // Day columns
+  days.forEach(function(dd){
+    var dstr=fmtDateStr(dd);
+    var timed=getAllEventsForDate(dstr).filter(function(e){return !isAllDay(e);});
+    html+='<div class="cal-day-col" data-date="'+dstr+'" onclick="openAddEventModal(this,event)">';
+    for(var h=0;h<24;h++)html+='<div class="cal-hour-line"></div>';
+    html+=buildTimedBlocks(timed);
+    html+='</div>';
+  });
+  html+='</div></div></div>';
+  var grid=document.getElementById('cal-grid');if(grid){
+    grid.innerHTML=html;
+    grid.style.setProperty('--cal-days',numDays);
+    grid.querySelectorAll('.cal-week-headers,.cal-week-timegrid,.cal-week-allday').forEach(function(el){
+      el.style.gridTemplateColumns='60px repeat('+numDays+',1fr)';
+    });
+  }
+  setTimeout(function(){var s=document.querySelector('.cal-week-scroll');if(s)s.scrollTop=8*HOUR_H;},10);
+}
+
+function renderDayView(){
+  var dstr=fmtDateStr(calViewDate);
+  set('cal-title',calViewDate.toLocaleDateString(lang,{weekday:'long',month:'long',day:'numeric',year:'numeric'}));
+  var allEvts=getAllEventsForDate(dstr);
+  var allDay=allEvts.filter(isAllDay);
+  var timed=allEvts.filter(function(e){return !isAllDay(e);});
+
+  var html='<div class="cal-week-grid">';
+  if(allDay.length){
+    html+='<div class="cal-week-allday" style="grid-template-columns:60px 1fr"><div class="cal-week-gutter" style="font-size:9px;color:var(--text3);text-align:center;padding-top:6px">all<br>day</div><div class="cal-week-allday-cell">'+
+      allDay.map(function(e){return '<div class="cal-mini-event" style="background:'+EVT_BG[e.type]+';color:'+EVT_COLORS[e.type]+'">'+e.label+'</div>';}).join('')+
+    '</div></div>';
+  }
+  html+='<div class="cal-week-scroll"><div class="cal-week-timegrid" style="grid-template-columns:60px 1fr">';
+  html+='<div class="cal-timecol">';
+  for(var h=0;h<24;h++)html+='<div class="cal-hour-lbl">'+formatHour(h)+'</div>';
+  html+='</div>';
+  html+='<div class="cal-day-col" data-date="'+dstr+'" onclick="openAddEventModal(this,event)">';
+  for(var h=0;h<24;h++)html+='<div class="cal-hour-line"></div>';
+  html+=buildTimedBlocks(timed);
+  html+='</div></div></div></div>';
+  var grid=document.getElementById('cal-grid');if(grid)grid.innerHTML=html;
+  setTimeout(function(){var s=document.querySelector('.cal-week-scroll');if(s)s.scrollTop=8*HOUR_H;},10);
+}
+
+
+// ── GOOGLE CALENDAR CONNECTION (separate persistent token) ────
+function renderGcalUI(){
+  var btn=document.getElementById('gcal-btn');
+  var statusEl=document.getElementById('gcal-status-text');
+  var settingsStatus=document.getElementById('settings-gcal-status');
+  var settingsBtn=document.getElementById('settings-gcal-disconnect');
+  if(gcalConnected){
+    if(btn){btn.style.display='';btn.textContent='↻ Reconnect';btn.onclick=connectGCal;
+      btn.style.background='var(--bg)';btn.style.color='var(--text2)';btn.style.border='1px solid var(--border)';
+      btn.style.padding='7px 14px';btn.style.fontSize='12px';}
+    var connTxt='<span style="color:var(--success)">● Connected</span>';
+    if(statusEl)statusEl.innerHTML=connTxt;
+    if(settingsStatus)settingsStatus.innerHTML='<span style="color:var(--success)">●</span> '+T.gcalConnected;
+    if(settingsBtn)settingsBtn.style.display='';
+  } else {
+    if(btn){btn.style.display='';btn.textContent=T.gcalBtn;btn.onclick=connectGCal;
+      btn.style.background='var(--primary)';btn.style.color='white';btn.style.border='none';
+      btn.style.padding='11px';btn.style.fontSize='14px';}
+    if(statusEl)statusEl.innerHTML='';
+    if(settingsStatus)settingsStatus.textContent=T.gcalNotConnected||'Not connected';
+    if(settingsBtn)settingsBtn.style.display='none';
+  }
+  renderGcalEvents();
+}
+
+function connectGCal(){
+  if(!currentUser){toast('Sign in first','err');return;}
+  // Always clear old token to force Google to show the account picker with correct scopes
+  localStorage.removeItem('bm_gcal_token');
+  gcalAccessToken='';
+  google.accounts.oauth2.initTokenClient({
+    client_id:CLIENT_ID,
+    scope:'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly',
+    prompt:'consent',
+    callback:function(r){
+      if(r.error){toast('Calendar auth failed: '+r.error,'err');return;}
+      gcalAccessToken=r.access_token;
+      localStorage.setItem('bm_gcal_token',gcalAccessToken);
+      gcalConnected=true;
+      localStorage.setItem('bm_gcal_connected','1');
+      toast(T.gcalConnected);
+      fetchGCalEvents();
+      bulkSyncExistingToGcal();
+      startGcalAutoRefresh();
+      renderGcalUI();
+    }
+  }).requestAccessToken();
+}
+
+// Silently try to get a fresh Calendar token without user interaction
+// Used after page reload when we believe we're connected but lost the token
+function silentReconnectGCal(){
+  if(!window.google||!currentUser)return;
+  try{
+    google.accounts.oauth2.initTokenClient({
+      client_id:CLIENT_ID,
+      scope:SCOPES+' https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+      prompt:'', // try silent
+      callback:function(r){
+        if(r.error){
+          gcalConnected=false;
+          localStorage.removeItem('bm_gcal_connected');
+          localStorage.removeItem('bm_gcal_token');
+          gcalAccessToken='';
+          renderGcalUI();
+          return;
+        }
+        gcalAccessToken=r.access_token;
+        localStorage.setItem('bm_gcal_token',gcalAccessToken);
+        fetchGCalEvents();
+        startGcalAutoRefresh();
+        renderGcalUI();
+      }
+    }).requestAccessToken({prompt:''});
+  }catch(e){
+    gcalConnected=false;
+    localStorage.removeItem('bm_gcal_connected');
+  }
+}
+
+function bulkSyncExistingToGcal(){
+  (DB.orders||[]).forEach(function(o,i){
+    if(o.dueDate&&o.status!=='Completed')syncOrderToGcal(i);
+  });
+  (DB.tasks||[]).forEach(function(t,i){
+    if(t.due&&!t.done)syncTaskToGcal(i);
+  });
+}
+
+function disconnectGCal(){
+  gcalConnected=false;
+  gcalAccessToken='';
+  gcalEvents=[];
+  localStorage.removeItem('bm_gcal_connected');
+  localStorage.removeItem('bm_gcal_token');
+  localStorage.removeItem('bm_gcal_map');
+  if(gcalRefreshTimer)clearInterval(gcalRefreshTimer);
+  renderGcalUI();
+  renderCalGrid();
+  toast('Disconnected from Google Calendar');
+}
+
+function fetchGCalEvents(){
+  if(!gcalAccessToken||!gcalConnected)return;
+  var timeMin=new Date(Date.now()-30*24*60*60*1000).toISOString();
+  var timeMax=new Date(Date.now()+90*24*60*60*1000).toISOString();
+  var url='https://www.googleapis.com/calendar/v3/calendars/primary/events'
+    +'?timeMin='+encodeURIComponent(timeMin)
+    +'&timeMax='+encodeURIComponent(timeMax)
+    +'&singleEvents=true&orderBy=startTime&maxResults=250';
+  fetch(url,{headers:{Authorization:'Bearer '+gcalAccessToken}})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var debugEl=document.getElementById('gcal-debug');
+    if(d.error){
+      if(d.error.code===401){
+        // Token expired — try silent refresh
+        if(debugEl)debugEl.textContent='Token expired, reconnecting...';
+        silentReconnectGCal();
+        return;
+      }
+      var msg='API Error '+d.error.code+': '+d.error.message;
+      if(debugEl)debugEl.textContent=msg;
+      if(d.error.code===403){
+        gcalConnected=false;
+        localStorage.removeItem('bm_gcal_connected');
+        gcalAccessToken='';
+        localStorage.removeItem('bm_gcal_token');
+        renderGcalUI();
+      }
+      return;
+    }
+    var count=d.items?d.items.length:0;
+    if(debugEl)debugEl.textContent='✓ Got '+count+' events from Google';
+    gcalEvents=[];
+    if(d.items&&d.items.length){
+      gcalEvents=d.items.map(function(e){
+        return {
+          summary:e.summary||'(No title)',
+          start:e.start.dateTime||e.start.date,
+          end:e.end?e.end.dateTime||e.end.date:null,
+          id:e.id
+        };
+      });
+    }
+    renderGcalEvents();
+    renderCalGrid();
+  })
+  .catch(function(err){
+    var debugEl=document.getElementById('gcal-debug');
+    if(debugEl)debugEl.textContent='Fetch error: '+err.message;
+    toast('Calendar fetch error','err');
+  });
+}
+
+function renderGcalEvents(){
+  var el=document.getElementById('gcal-events');
+  if(!el)return;
+  if(!gcalConnected){
+    el.innerHTML='<div class="empty" style="padding:16px 0">'+T.noEvents+'</div>';
+    return;
+  }
+  if(!gcalEvents.length){
+    el.innerHTML='<div style="padding:16px 0;text-align:center"><div style="font-size:12px;color:var(--text3);margin-bottom:8px">No events found ('+gcalEvents.length+' loaded)</div><button class="btn-cancel" onclick="fetchGCalEvents()" style="font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid var(--border)">↻ Refresh now</button></div>';
+    return;
+  }
+  var all=gcalEvents.slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
+  el.innerHTML='<div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-weight:600">'+gcalEvents.length+' events loaded</div>'+
+  all.slice(0,10).map(function(e){
+    var d=new Date(e.start);
+    var isDate=e.start.length===10; // all-day event (no time component)
+    var dateLabel=isDate?d.toLocaleDateString(lang,{month:'short',day:'numeric'}):d.toLocaleDateString(lang,{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString(lang,{hour:'2-digit',minute:'2-digit'});
+    return '<div class="list-row"><div class="list-av" style="background:var(--success-l);color:var(--success);font-size:14px">📅</div>'+
+      '<div><div class="list-name">'+e.summary+'</div><div class="list-sub">'+dateLabel+'</div></div></div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// CLIENTS — auto-calculated purchase history from sales/orders
+// ════════════════════════════════════════════════════════════
+var activeClientIndex=null;
+
+function saveClient(){
+  var name=v('mc-name'),email=v('mc-email'),phone=v('mc-phone'),notes=v('mc-notes');
+  if(!name){toast(T.fillRequired,'err');return;}
+  var d={name,email,phone,notes,createdAt:today()};
+  DB.clients=DB.clients||[];
+  DB.clients.push(d);saveDB('clients');
+  appSh('Clients',[name,email,phone,notes,today()]);
+  toast(T.clientSaved);closeModal('m-client');
+  clr(['mc-name','mc-email','mc-phone','mc-notes']);
+  loadClients();
+}
+
+function getClientStats(clientName){
+  // Match by name across sales (via notes field containing customer hint) and orders (customer field)
+  var orders=(DB.orders||[]).filter(function(o){return o.customer&&o.customer.toLowerCase().trim()===clientName.toLowerCase().trim();});
+  var totalSpent=orders.reduce(function(s,o){return s+(parseFloat(o.price)||0);},0);
+  var lastDate=null;
+  orders.forEach(function(o){if(o.date&&(!lastDate||o.date>lastDate))lastDate=o.date;});
+  return {count:orders.length,totalSpent,lastDate,orders};
+}
+
+function loadClients(){
+  var rows=DB.clients||[];
+  var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();
+  var newThisMonth=rows.filter(function(c){var d=new Date(c.createdAt);return !isNaN(d)&&d.getMonth()===thisM&&d.getFullYear()===thisY;}).length;
+
+  var topClient=null,topSpent=0;
+  rows.forEach(function(c){
+    var stats=getClientStats(c.name);
+    if(stats.totalSpent>topSpent){topSpent=stats.totalSpent;topClient=c.name;}
+  });
+
+  set('cl-tot',rows.length);
+  set('cl-new',newThisMonth);
+  set('cl-top',topClient||'—');
+
+  var el=document.getElementById('clients-list');
+  if(!el)return;
+  if(!rows.length){el.innerHTML='<div class="empty">'+T.noClients+'</div>';return;}
+
+  var colors=['#D97706','#22C55E','#EF4444','#F59E0B','#EC4899','#6C63FF'];
+  el.innerHTML=rows.map(function(c,i){
+    var stats=getClientStats(c.name);
+    var ini=c.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+    var ci=c.name.charCodeAt(0)%colors.length;
+    return '<div class="list-row" style="cursor:pointer" onclick="viewClientHistory('+i+')">'+
+      '<div class="list-av" style="background:'+colors[ci]+'22;color:'+colors[ci]+'">'+ini+'</div>'+
+      '<div style="flex:1"><div class="list-name">'+c.name+'</div>'+
+      '<div class="list-sub">'+(c.email||'')+(c.email&&c.phone?' · ':'')+(c.phone||'')+'</div></div>'+
+      '<div class="list-r"><div class="list-amount">'+$d(stats.totalSpent)+'</div>'+
+      '<div class="list-sub">'+stats.count+' '+T.purchases.toLowerCase()+'</div></div>'+
+      '<button class="ibtn" onclick="event.stopPropagation();del(\'clients\','+i+')" style="margin-left:8px">✕</button>'+
+    '</div>';
+  }).join('');
+}
+
+function viewClientHistory(i){
+  activeClientIndex=i;
+  var c=DB.clients[i];
+  if(!c)return;
+  var stats=getClientStats(c.name);
+
+  document.getElementById('clients-list-view').style.display='none';
+  document.getElementById('client-history-view').style.display='block';
+  set('ch-name',c.name);
+  set('ch-count',stats.count);
+  set('ch-total',$d(stats.totalSpent));
+
+  var el=document.getElementById('ch-list');
+  if(!stats.orders.length){
+    el.innerHTML='<div class="empty">'+T.noPurchaseHistory+'</div>';
+    // Show notes even with no purchases
+    if(c.notes){el.innerHTML+='<div class="card" style="background:var(--bg);margin-top:12px;padding:14px"><div class="fl" style="margin-bottom:6px">'+T.clientNotes+'</div><div style="font-size:13px;color:var(--text2)">'+c.notes+'</div></div>';}
+    return;
+  }
+
+  var sorted=stats.orders.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  el.innerHTML=sorted.map(function(o){
+    return '<div class="list-row"><div><div class="list-name">'+o.product+'</div><div class="list-sub">'+o.date+'</div></div>'+
+      '<div class="list-r"><div class="list-amount">'+$d(o.price)+'</div><div class="list-status" style="color:'+(o.status==='Completed'?'var(--success)':'var(--warning)')+'">'+o.status+'</div></div></div>';
+  }).join('');
+
+  if(c.notes){
+    el.innerHTML+='<div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;margin-top:14px"><div class="fl" style="margin-bottom:6px">'+T.clientNotes+'</div><div style="font-size:13px;color:var(--text2)">'+c.notes+'</div></div>';
+  }
+}
+
+function showClientsList(){
+  document.getElementById('clients-list-view').style.display='block';
+  document.getElementById('client-history-view').style.display='none';
+  loadClients();
+}
+
+// ════════════════════════════════════════════════════════════
+// MONTHLY REPORTS — PDF generation
+// ════════════════════════════════════════════════════════════
+function loadReportsPage(){
+  var input=document.getElementById('report-month');
+  if(input&&!input.value){
+    var now=new Date();
+    input.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  }
+}
+
+function downloadMonthlyReport(){
+  var monthVal=v('report-month');
+  if(!monthVal){toast(T.fillRequired,'err');return;}
+  var btn=document.getElementById('report-btn');
+  if(btn){btn.textContent=T.generatingReport;btn.disabled=true;}
+
+  setTimeout(function(){
+    try{
+      generatePDFReport(monthVal);
+      toast(T.reportReady);
+    }catch(e){
+      toast('Error generating PDF','err');
+      console.error(e);
+    }
+    if(btn){btn.textContent=T.downloadReport;btn.disabled=false;}
+  },300);
+}
+
+function generatePDFReport(monthVal){
+  var parts=monthVal.split('-');
+  var y=parseInt(parts[0]),m=parseInt(parts[1])-1;
+  var monthName=T.mn[m]+' '+y;
+
+  var sales=(DB.sales||[]).filter(function(s){var d=new Date(s.date);return !isNaN(d)&&d.getFullYear()===y&&d.getMonth()===m;});
+  var expenses=(DB.expenses||[]).filter(function(e){var d=new Date(e.date);return !isNaN(d)&&d.getFullYear()===y&&d.getMonth()===m;});
+  var orders=(DB.orders||[]).filter(function(o){var d=new Date(o.date);return !isNaN(d)&&d.getFullYear()===y&&d.getMonth()===m;});
+
+  var totalRev=sales.reduce(function(s,r){return s+(parseFloat(r.total)||0);},0);
+  var totalExp=expenses.reduce(function(s,r){return s+(parseFloat(r.amount)||0);},0);
+  var netProfit=totalRev-totalExp;
+
+  var catTotals={};
+  sales.forEach(function(s){catTotals[s.category]=(catTotals[s.category]||0)+(parseFloat(s.total)||0);});
+  var topCats=Object.entries(catTotals).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+
+  var { jsPDF } = window.jspdf;
+  var doc=new jsPDF();
+  var bizName=(DB.settings&&DB.settings.name)||'Bakery Manager';
+  var y0=20;
+
+  doc.setFontSize(20);doc.setFont(undefined,'bold');
+  doc.text(bizName,20,y0);
+  doc.setFontSize(12);doc.setFont(undefined,'normal');
+  doc.setTextColor(120);
+  doc.text('Monthly Report — '+monthName,20,y0+8);
+  doc.setTextColor(0);
+
+  y0+=22;
+  doc.setDrawColor(220);doc.line(20,y0,190,y0);
+  y0+=12;
+
+  doc.setFontSize(14);doc.setFont(undefined,'bold');
+  doc.text('Summary',20,y0);
+  y0+=10;
+  doc.setFontSize(11);doc.setFont(undefined,'normal');
+  doc.text('Total Revenue:',20,y0);doc.setFont(undefined,'bold');doc.text('$'+totalRev.toFixed(2),100,y0);doc.setFont(undefined,'normal');
+  y0+=8;
+  doc.text('Total Expenses:',20,y0);doc.setFont(undefined,'bold');doc.text('$'+totalExp.toFixed(2),100,y0);doc.setFont(undefined,'normal');
+  y0+=8;
+  doc.text('Net Profit:',20,y0);doc.setFont(undefined,'bold');
+  doc.setTextColor(netProfit>=0?34:239,netProfit>=0?197:68,netProfit>=0?94:68);
+  doc.text('$'+netProfit.toFixed(2),100,y0);
+  doc.setTextColor(0);doc.setFont(undefined,'normal');
+  y0+=8;
+  doc.text('Transactions:',20,y0);doc.setFont(undefined,'bold');doc.text(String(sales.length),100,y0);doc.setFont(undefined,'normal');
+  y0+=8;
+  doc.text('Orders:',20,y0);doc.setFont(undefined,'bold');doc.text(String(orders.length),100,y0);doc.setFont(undefined,'normal');
+
+  y0+=16;
+  doc.setDrawColor(220);doc.line(20,y0,190,y0);
+  y0+=12;
+
+  doc.setFontSize(14);doc.setFont(undefined,'bold');
+  doc.text('Top Categories',20,y0);
+  y0+=10;
+  doc.setFontSize(11);doc.setFont(undefined,'normal');
+  if(!topCats.length){
+    doc.setTextColor(150);doc.text('No sales recorded this month',20,y0);doc.setTextColor(0);
+    y0+=8;
+  } else {
+    topCats.forEach(function(c){
+      doc.text(c[0],20,y0);
+      doc.setFont(undefined,'bold');doc.text('$'+c[1].toFixed(2),140,y0);doc.setFont(undefined,'normal');
+      y0+=8;
+    });
+  }
+
+  y0+=10;
+  doc.setDrawColor(220);doc.line(20,y0,190,y0);
+  y0+=12;
+
+  doc.setFontSize(14);doc.setFont(undefined,'bold');
+  doc.text('Sales Detail',20,y0);
+  y0+=10;
+  doc.setFontSize(9);doc.setFont(undefined,'normal');
+  if(!sales.length){
+    doc.setTextColor(150);doc.text('No sales this month',20,y0);doc.setTextColor(0);
+  } else {
+    sales.forEach(function(s){
+      if(y0>270){doc.addPage();y0=20;}
+      doc.text(s.date+'  '+s.product.slice(0,40),20,y0);
+      doc.text('$'+(parseFloat(s.total)||0).toFixed(2),170,y0);
+      y0+=6;
+    });
+  }
+
+  doc.setFontSize(8);doc.setTextColor(150);
+  doc.text('Generated by Bakery Manager — '+new Date().toLocaleDateString(),20,290);
+
+  doc.save(bizName.replace(/\\s+/g,'_')+'_Report_'+monthName.replace(' ','_')+'.pdf');
+}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD ALERTS — configurable notification card
+// ════════════════════════════════════════════════════════════
+function getDashboardAlerts(){
+  var alerts=[];
+  var notifSettings=DB.settings.notifications||{lowStock:true,orders:true,tasks:true};
+
+  if(notifSettings.lowStock!==false){
+    var lowStockItems=(DB.inventory||[]).filter(function(i){return parseFloat(i.stock)<=parseFloat(i.min);});
+    if(lowStockItems.length){
+      alerts.push({
+        type:'stock',icon:'📦',color:'danger',
+        text:lowStockItems.length+' '+(lowStockItems.length===1?T.alertLowStock:T.alertLowStockPl),
+        action:function(){go('inventory');}
+      });
+    }
+  }
+
+  if(notifSettings.orders!==false){
+    var soon=new Date();soon.setDate(soon.getDate()+3);
+    var soonStr=soon.toISOString().split('T')[0];
+    var todayStr=today();
+    var dueSoonOrders=(DB.orders||[]).filter(function(o){return o.status!=='Completed'&&o.dueDate&&o.dueDate>=todayStr&&o.dueDate<=soonStr;});
+    if(dueSoonOrders.length){
+      alerts.push({
+        type:'orders',icon:'📋',color:'warning',
+        text:dueSoonOrders.length+' '+(dueSoonOrders.length===1?T.alertDueOrder:T.alertDueOrderPl),
+        action:function(){go('orders');}
+      });
+    }
+  }
+
+  if(notifSettings.tasks!==false){
+    var todayStr2=today();
+    var dueTasks=(DB.tasks||[]).filter(function(t){return !t.done&&t.due&&t.due<=todayStr2;});
+    if(dueTasks.length){
+      alerts.push({
+        type:'tasks',icon:'✓',color:'primary',
+        text:dueTasks.length+' '+(dueTasks.length===1?T.alertTask:T.alertTaskPl),
+        action:function(){go('tasks');}
+      });
+    }
+  }
+
+  return alerts;
+}
+
+function renderDashboardAlerts(){
+  var el=document.getElementById('dash-alerts');
+  if(!el)return;
+  var alerts=getDashboardAlerts();
+  if(!alerts.length){
+    el.innerHTML='<div class="card" id="w-alerts" style="display:flex;align-items:center;gap:12px;padding:16px 20px;margin-bottom:20px"><span style="font-size:20px">✓</span><span style="font-size:13px;color:var(--text2);font-weight:500">'+T.noAlerts+'</span></div>';
+  } else {
+    var colorMap={danger:'var(--danger)',warning:'var(--warning)',primary:'var(--primary)'};
+    var bgMap={danger:'var(--danger-l)',warning:'var(--warning-l)',primary:'var(--primary-l)'};
+    el.innerHTML='<div class="card" id="w-alerts" style="margin-bottom:20px">'+
+      '<div class="card-hdr" style="margin-bottom:12px"><div class="card-title" style="font-size:13px">⚠ '+T.alertsTitle+'</div></div>'+
+      alerts.map(function(a,i){
+        return '<div onclick="dashAlertClick('+i+')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:'+bgMap[a.color]+';border-radius:10px;margin-bottom:6px;cursor:pointer">'+
+          '<span style="font-size:16px">'+a.icon+'</span>'+
+          '<span style="font-size:13px;font-weight:600;color:'+colorMap[a.color]+'">'+a.text+'</span>'+
+          '<span style="margin-left:auto;color:'+colorMap[a.color]+'">→</span>'+
+        '</div>';
+      }).join('')+
+    '</div>';
+    window._dashAlertsActions=alerts;
+  }
+  applyWidgets();
+}
+function dashAlertClick(i){if(window._dashAlertsActions&&window._dashAlertsActions[i])window._dashAlertsActions[i].action();}
+
+function toggleNotifSetting(key,val){
+  DB.settings.notifications=DB.settings.notifications||{};
+  DB.settings.notifications[key]=val;
+  saveDB('settings');
+  renderDashboardAlerts();
+}
+
+
+// ── CALENDAR EVENT ADD / DELETE ──────────────────────────────
+var _viewEventGcalId='';
+var _viewEventType='';
+
+function openAddEventModal(el,evt){
+  var dateStr=el&&el.dataset?el.dataset.date:el;
+  // Don't open if clicking on an event block
+  if(evt&&evt.target&&evt.target.closest&&evt.target.closest('.cal-evt-block'))return;
+  document.getElementById('cae-date').value=dateStr;
+  // Guess time from click position
+  var scrollEl=document.querySelector('.cal-week-scroll');
+  if(scrollEl&&evt){
+    var rect=scrollEl.getBoundingClientRect();
+    var relY=(evt.clientY-rect.top)+scrollEl.scrollTop;
+    var hour=Math.floor(relY/60);hour=Math.max(0,Math.min(23,hour));
+    document.getElementById('cae-start').value=String(hour).padStart(2,'0')+':00';
+    document.getElementById('cae-end').value=String(Math.min(23,hour+1)).padStart(2,'0')+':00';
+  }
+  openModal('m-cal-add');
+}
+
+function createCalendarEvent(){
+  var title=document.getElementById('cae-title').value.trim();
+  var date=document.getElementById('cae-date').value;
+  var start=document.getElementById('cae-start').value;
+  var end=document.getElementById('cae-end').value;
+  var desc=document.getElementById('cae-desc').value.trim();
+  if(!title||!date){toast('Fill title and date','err');return;}
+  if(!gcalConnected||!gcalAccessToken){
+    toast('Connect Google Calendar first','err');
+    closeModal('m-cal-add');
+    return;
+  }
+  var startISO=date+'T'+start+':00';
+  var endISO=date+'T'+end+':00';
+  var body={summary:title,description:desc,start:{dateTime:startISO},end:{dateTime:endISO}};
+  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events',{
+    method:'POST',
+    headers:{Authorization:'Bearer '+gcalAccessToken,'Content-Type':'application/json'},
+    body:JSON.stringify(body)
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.error){toast('Error: '+d.error.message,'err');return;}
+    toast('Event created ✓');
+    closeModal('m-cal-add');
+    document.getElementById('cae-title').value='';
+    document.getElementById('cae-desc').value='';
+    fetchGCalEvents(); // refresh immediately
+  })
+  .catch(function(){toast('Could not create event','err');});
+}
+
+function openEventDetail(el){
+  var label=el.dataset.label||el.getAttribute('data-label')||'Event';
+  var gcalId=el.dataset.gcalid||el.getAttribute('data-gcalid')||'';
+  var type=el.dataset.type||el.getAttribute('data-type')||'gcal';
+  _viewEventGcalId=gcalId;
+  _viewEventType=type;
+  document.getElementById('cev-title').textContent=label;
+  var deleteBtn=document.getElementById('cev-delete-btn');
+  if(gcalId&&gcalConnected){
+    deleteBtn.style.display='';
+    deleteBtn.textContent=type==='gcal'?'Delete from Calendar':'Remove';
+  } else if(type==='order'){
+    deleteBtn.style.display='none';
+    document.getElementById('cev-body').innerHTML='<span class="badge b-primary">Order</span> Go to Orders page to manage this.';
+  } else if(type==='task'){
+    deleteBtn.style.display='none';
+    document.getElementById('cev-body').innerHTML='<span class="badge b-warning">Task</span> Go to To-Do List to manage this.';
+  } else {
+    deleteBtn.style.display='none';
+  }
+  if(gcalId)document.getElementById('cev-body').innerHTML='<span class="badge b-success">Google Calendar</span>';
+  openModal('m-cal-view');
+}
+
+function deleteCalendarEvent(){
+  if(!_viewEventGcalId||!gcalAccessToken){toast('Cannot delete','err');return;}
+  if(!confirm('Delete this event from Google Calendar?'))return;
+  fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+_viewEventGcalId,{
+    method:'DELETE',
+    headers:{Authorization:'Bearer '+gcalAccessToken}
+  })
+  .then(function(r){
+    if(r.status===204||r.status===200){
+      toast('Event deleted ✓');
+      closeModal('m-cal-view');
+      fetchGCalEvents();
+    } else {
+      toast('Could not delete event','err');
+    }
+  })
+  .catch(function(){toast('Delete failed','err');});
+}
+
+function del(key,i){
+  if(!confirm(T.confirmDel))return;
+  if(key==='orders'||key==='tasks')unsyncFromGcal(key,i);
+  DB[key].splice(i,1);saveDB(key);toast(T.deleted);go(currentPage);
+}
+function exportCSV(){var csv='SALES\nDate,Category,Product,Qty,Total,Payment\n';DB.sales.forEach(function(r){csv+=[r.date,r.category,r.product,r.qty,r.total,r.payment].join(',')+'\n';});csv+='\nEXPENSES\nDate,Category,Description,Amount\n';DB.expenses.forEach(function(r){csv+=[r.date,r.category,r.description,r.amount].join(',')+'\n';});var blob=new Blob([csv],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bakery-data.csv';a.click();toast(T.exported);}
+
+function loadSample(){
+  var ago=function(d){var dt=new Date();dt.setDate(dt.getDate()-d);return dt.toISOString().split('T')[0];};
+  var fut=function(d){var dt=new Date();dt.setDate(dt.getDate()+d);return dt.toISOString().split('T')[0];};
+  DB.sales=[
+    {date:ago(1),category:'Custom Cakes',product:'Birthday Cake 6"',qty:1,price:65,total:'65.00',payment:'Card',notes:''},
+    {date:ago(2),category:'Cupcakes',product:'Red Velvet x12',qty:1,price:36,total:'36.00',payment:'Cash',notes:''},
+    {date:ago(3),category:'Wedding Cakes',product:'3-Tier Wedding Cake',qty:1,price:350,total:'350.00',payment:'Transfer',notes:''},
+    {date:ago(5),category:'Cookies',product:'Decorated Cookies x24',qty:2,price:30,total:'60.00',payment:'Card',notes:''},
+    {date:ago(7),category:'Bread & Pastries',product:'Sourdough Loaf x4',qty:4,price:12,total:'48.00',payment:'Cash',notes:''},
+    {date:ago(9),category:'Events',product:'Neighborhood Fair',qty:1,price:280,total:'280.00',payment:'Cash',notes:''},
+    {date:ago(11),category:'Custom Cakes',product:'Graduation Cake',qty:1,price:85,total:'85.00',payment:'Transfer',notes:''},
+  ];
+  DB.expenses=[
+    {date:ago(1),category:'Ingredients',description:'Butter, flour, eggs',amount:85},
+    {date:ago(3),category:'Packaging',description:'Cake boxes x50',amount:45},
+    {date:ago(5),category:'Marketing',description:'Instagram ads',amount:30},
+    {date:ago(8),category:'Rent',description:'Monthly kitchen rent',amount:400},
+    {date:ago(10),category:'Utilities',description:'Gas and electricity',amount:95},
+  ];
+  DB.orders=[
+    {customer:'Maria García',product:'Birthday Cake',date:ago(5),dueDate:fut(7),price:65,deposit:32.50,balance:'32.50',notes:'Fondant flowers',status:'Pending'},
+    {customer:'Laura Martinez',product:'3-Tier Wedding Cake',date:ago(3),dueDate:fut(14),price:350,deposit:175,balance:'175.00',notes:'Blush & ivory',status:'Pending'},
+    {customer:'Ana Lopez',product:'Cupcakes x2 dozen',date:ago(8),dueDate:ago(2),price:72,deposit:72,balance:'0.00',notes:'',status:'Completed'},
+  ];
+  DB.products=[
+    {name:'Birthday Cake',ingredientCost:12.50,packaging:2.80,laborHrs:3,rate:15,totalCost:'57.30',salePrice:65,profit:'7.70',margin:'11.8%',unitsPerMonth:15},
+    {name:'Wedding Cake',ingredientCost:45,packaging:8.50,laborHrs:8,rate:15,totalCost:'173.50',salePrice:350,profit:'176.50',margin:'50.4%',unitsPerMonth:3},
+    {name:'Cupcakes Dozen',ingredientCost:6.20,packaging:1.50,laborHrs:1.5,rate:15,totalCost:'30.20',salePrice:36,profit:'5.80',margin:'16.1%',unitsPerMonth:25},
+  ];
+  DB.inventory=[
+    {name:'All-Purpose Flour',category:'Dry Goods',unit:'kg',stock:25,min:5,cost:0.80,supplier:'Local Mill'},
+    {name:'Unsalted Butter',category:'Dairy',unit:'kg',stock:8,min:4,cost:6.50,supplier:'Dairy Direct'},
+    {name:'Cake Boxes',category:'Packaging',unit:'pack',stock:4,min:10,cost:0.45,supplier:'Pack Direct'},
+    {name:'Vanilla Extract',category:'Flavoring',unit:'unit',stock:3,min:2,cost:4.50,supplier:'Spice House'},
+  ];
+  DB.goals=[
+    {goal:'Annual Revenue',target:60000,current:28500,deadline:new Date().getFullYear()+'-12-31',priority:'High'},
+    {goal:'Equipment Fund',target:3000,current:1200,deadline:new Date().getFullYear()+'-06-30',priority:'Medium'},
+  ];
+  ['sales','expenses','orders','products','inventory','goals'].forEach(function(k){saveDB(k);});
+  toast(T.sampleLoaded);loadDash();
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT — always start at login, no auto-relogin with stale tokens
+// ════════════════════════════════════════════════════════════
+window.addEventListener('load',function(){
+  applyLangUI();
+  document.querySelectorAll('input[type="date"]').forEach(function(el){el.value=today();});
+  showScreen('screen-login');
+});
+</script>
+</body>
+</html>
